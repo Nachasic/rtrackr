@@ -1,18 +1,26 @@
 use x11::xlib::{
     Atom as XAtom,
+    False as xFalse,
     True as XTrue,
     XInternAtom,
+    XGetWindowProperty,
+    XFree
 };
 use std::{
     os::raw::{
-        c_ulong
+        c_ulong,
+        c_void,
+        c_uchar,
+        c_int
     },
+    ptr::null_mut,
+    slice,
     ffi::{
         CString,
         NulError,
     }
 };
-use crate::{ Display, Null };
+use crate::{ Display, Null, Window };
 
 pub enum AtomType {
     WM_NAME,
@@ -23,6 +31,7 @@ pub enum AtomType {
     NET_CLIENT_LIST,
     NET_ACTIVE_WINDOW
 }
+
 
 /// A wrapper around a [x11::xlib::Atom].
 /// 

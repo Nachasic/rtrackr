@@ -26,7 +26,7 @@ use crate::{
     Null,
     Session,
     AtomType,
-    get_window_property
+    // get_window_property
 };
 
 /// A response to [get_window_property].
@@ -106,46 +106,46 @@ impl Window {
     //     Err(NotSupported)
     // }
 
-    /// Gets the current active window.
-    /// 
-    /// This function uses a [Session] struct and will update the properties
-    /// that are set to [None] but are required.
-    /// This uses the display, root_window, and active_window_atom properties
-    /// of the [Session] struct.
-    pub fn active_window(session: &mut Session) -> Option<Self> {
-        let Session { display, root_window, active_window_atom, .. } = session;
-        let root_window = root_window.get_or_insert(Window::default_root_window(display));
-        let active_window_atom = active_window_atom.get_or_insert(
-            Atom::new(&display, AtomType::NET_ACTIVE_WINDOW).expect("could not create atom")
-        );
-        let response = unsafe {
-            let result = get_window_property(display, *root_window, *active_window_atom, XA_WINDOW);
-            match result {
-                Ok(res) => res,
-                _ => panic!("could not get property")
-            }
-        };
-        let window = match response.actual_format_return {
-            8 => {
-                unsafe{slice::from_raw_parts(response.proper_return as *const u8, response.nitems_return as usize)}
-                    .first()
-                    .map(|x| Window(*x as XWindow))
-            },
-            16 => {
-                unsafe{slice::from_raw_parts(response.proper_return as *const u16, response.nitems_return as usize)}
-                    .first()
-                    .map(|x| Window(*x as XWindow))
-            },
-            32 => {
-                unsafe{slice::from_raw_parts(response.proper_return as *const usize, response.nitems_return as usize)}
-                    .first()
-                    .map(|x| Window(*x as XWindow))
-            },
-            _ => { None },
-        };
-        unsafe{XFree(response.proper_return as *mut c_void)};
-        window
-    }
+    // /// Gets the current active window.
+    // /// 
+    // /// This function uses a [Session] struct and will update the properties
+    // /// that are set to [None] but are required.
+    // /// This uses the display, root_window, and active_window_atom properties
+    // /// of the [Session] struct.
+    // pub fn active_window(session: &mut Session) -> Option<Self> {
+    //     let Session { display, root_window, active_window_atom, .. } = session;
+    //     let root_window = root_window.get_or_insert(Window::default_root_window(display));
+    //     let active_window_atom = active_window_atom.get_or_insert(
+    //         Atom::new(&display, AtomType::NET_ACTIVE_WINDOW).expect("could not create atom")
+    //     );
+    //     let response = unsafe {
+    //         let result = get_window_property(display, *root_window, *active_window_atom, XA_WINDOW);
+    //         match result {
+    //             Ok(res) => res,
+    //             _ => panic!("could not get property")
+    //         }
+    //     };
+    //     let window = match response.actual_format_return {
+    //         8 => {
+    //             unsafe{slice::from_raw_parts(response.proper_return as *const u8, response.nitems_return as usize)}
+    //                 .first()
+    //                 .map(|x| Window(*x as XWindow))
+    //         },
+    //         16 => {
+    //             unsafe{slice::from_raw_parts(response.proper_return as *const u16, response.nitems_return as usize)}
+    //                 .first()
+    //                 .map(|x| Window(*x as XWindow))
+    //         },
+    //         32 => {
+    //             unsafe{slice::from_raw_parts(response.proper_return as *const usize, response.nitems_return as usize)}
+    //                 .first()
+    //                 .map(|x| Window(*x as XWindow))
+    //         },
+    //         _ => { None },
+    //     };
+    //     unsafe{XFree(response.proper_return as *mut c_void)};
+    //     window
+    // }
     /// Gets the title of the window.
     /// 
     /// If the window does not have a title, a null pointer may be returned.
