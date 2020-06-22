@@ -26,11 +26,10 @@ use std::{
 
 use xorg::*;
 
-pub trait Atom {
-
+pub trait RawAtom {
     fn get (display: &Display) -> XAtom;
     fn get_expected_property_type (&self) -> XAtom;
-    fn get_as_property (&self, display: &Display, window: &Window) -> Option<usize> {
+    fn get_as_raw_property (&self, display: &Display, window: &Window) -> Option<usize> {
         let mut actual_type_return: XAtom = 0;
         let mut actual_format_return: c_int = 0;
         let mut num_items_return: c_ulong = 0;
@@ -75,9 +74,14 @@ pub trait Atom {
     }
 }
 
+pub trait Atom: RawAtom {
+    type PropertyType;
+    fn get_as_property (&self, display: &Display, window: &Window) -> Option<Self::PropertyType>;
+}
+
 #[derive(Debug, Copy, Clone)]
 struct XNetActiveWindow;
-impl Atom for XNetActiveWindow {
+impl RawAtom for XNetActiveWindow {
     fn get(display: &Display) -> XAtom {
         unsafe { XInternAtom(
             display.0, 
@@ -89,14 +93,20 @@ impl Atom for XNetActiveWindow {
         XA_WINDOW
     }
 }
+impl Atom for XNetActiveWindow {
+    type PropertyType = Window;
+    fn get_as_property(&self, display: &Display, window: &Window) -> Option<Self::PropertyType> { 
+        RawAtom::get_as_raw_property(self, display, window).map(
+            |res| Window (res as XWindow)
+        )
+    }
+}
 
 fn main () -> Result<(), Null> {
     let Session { ref display, ref mut root_window, .. } = Session::open()?;
     let root_window = root_window.get_or_insert(Window::default_root_window(&display));
-    let active_window = Window(
-        XNetActiveWindow.get_as_property(&display, root_window).unwrap() as XWindow
-    );
-    // let active_window = Window::active_window(&mut session).expect("could not get actuive window");
+    let active_window = XNetActiveWindow.get_as_property(display, root_window).unwrap();
+
     let title = active_window.get_title(&display)?;
     println!("{:?}", title);
     Ok({})

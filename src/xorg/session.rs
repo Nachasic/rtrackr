@@ -8,7 +8,7 @@ use std::{
     slice,
 };
 use crate::{
-    Atom,
+    RawAtom,
     AtomType,
     Display,
     Window,

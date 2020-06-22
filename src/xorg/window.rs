@@ -21,7 +21,7 @@ use std::{
     }
 };
 use crate::{
-    Atom,
+    RawAtom,
     Display,
     Null,
     Session,
