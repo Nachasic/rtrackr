@@ -4,7 +4,6 @@ use x11::xlib::{
 };
 use crate::{
     Display,
-    Session,
     XNetActiveWindow,
     XWMName,
     XWMClass,
@@ -30,10 +29,9 @@ impl Window {
     /// that are set to [None] but are required.
     /// This uses the display, root_window, and active_window_atom properties
     /// of the [Session] struct.
-    pub fn active_window(session: &mut Session) -> 
+    pub fn active_window(display: &Display) -> 
         Result<Window, <XNetActiveWindow as Atom>::ErrorType> {
-            let Session { ref display, ref mut root_window, .. } = session;
-            let root_window = root_window.get_or_insert(Window::default_root_window(&display));
+            let root_window = Window::default_root_window(&display);
             XNetActiveWindow.get_as_property(display, &root_window)
         }
 
