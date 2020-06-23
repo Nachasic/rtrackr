@@ -1,15 +1,4 @@
-use x11::xlib::{
-    Window as XWindow,
-    XA_WINDOW,
-    XFree,
-};
-use std::{
-    os::raw::c_void,
-    slice,
-};
 use crate::{
-    RawAtom,
-    AtomType,
     Display,
     Window,
     Null

@@ -1,13 +1,11 @@
 use x11::xlib::{
-    Atom as XAtom,
-    True as XTrue,
     Display as XDisplay,
     XOpenDisplay,
-    XCloseDisplay,
-    XInternAtom
+    XCloseDisplay
 };
 use std::{
-    ptr::null
+    ptr::null,
+    ops::Drop
 };
 
 // TODO better error handling
@@ -28,5 +26,11 @@ impl Display {
             return Err(Null)
         }
         Ok(Display(x_display))
+    }
+}
+
+impl Drop for Display {
+    fn drop(&mut self) {
+        unsafe { XCloseDisplay(self.0) };
     }
 }
