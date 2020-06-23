@@ -1,20 +1,23 @@
 mod xorg;
 use xorg::*;
 
-fn main () -> Result<(), &'static(dyn std::error::Error)> {
-    let display = Display::open().unwrap();
-    let active_window = Window::active_window(&display).unwrap();
+fn run () -> Result<(), Box<dyn std::error::Error>> {
+    let display = Display::open().ok_or_else(|| "Failed to get display")?;
+    let root_window = display.get_default_root_window();
 
-    let title = active_window.get_title(&display)
-        .unwrap_or_else(|err| err.to_string());
+    let active_window = XNetActiveWindow::get_as_property(&display, &root_window)?;
+    let title = XWMName::get_as_property(&display, &active_window)?;
+    let (app_name, app_class) = XWMClass::get_as_property(&display, &active_window)?;
+
     println!("Title {:?}", title);
-
-    let (app_name, class) = active_window.get_name_and_class(&display)
-        .unwrap_or_else(|err|
-            (err.to_string(), String::from(""))
-        );
     println!("Application name {:?}", app_name);
-    println!("Class {:?}", class);
-
+    println!("Class {:?}", app_class);
     Ok({})
+
+}
+fn main () {
+    match run() {
+        Err(err) => println!("FATAL ERROR: {}", err),
+        Ok(_) => println!("Done, goodbye!")
+    };
 }
