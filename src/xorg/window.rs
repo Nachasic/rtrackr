@@ -12,6 +12,7 @@ use crate::{
     Display,
     Session,
     XNetActiveWindow,
+    XWMName,
     Atom,
     Null,
 };
@@ -35,32 +36,20 @@ impl Window {
     /// that are set to [None] but are required.
     /// This uses the display, root_window, and active_window_atom properties
     /// of the [Session] struct.
-    pub fn active_window(session: &mut Session) -> Option<Self> {
-        let Session { ref display, ref mut root_window, .. } = session;
-        let root_window = root_window.get_or_insert(Window::default_root_window(&display));
-        XNetActiveWindow.get_as_property(display, &root_window)
-    }
+    pub fn active_window(session: &mut Session) -> 
+        Result<Window, <XNetActiveWindow as Atom>::ErrorType> {
+            let Session { ref display, ref mut root_window, .. } = session;
+            let root_window = root_window.get_or_insert(Window::default_root_window(&display));
+            XNetActiveWindow.get_as_property(display, &root_window)
+        }
 
     /// Gets the title of the window.
-    pub fn get_title(self, display: &Display) -> Result<String, Null> {
-        let mut text_property = XTextProperty {
-            value: null_mut(),
-            encoding: 0,
-            format: 0,
-            nitems: 0,
-        };
-        unsafe { 
-            XGetWMName(
-                display.0,
-                self.0,
-                &mut text_property,
-            )
-        };
-        if !text_property.value.is_null() {
-            let text = unsafe { CStr::from_ptr(text_property.value as *mut i8) };
-            text.to_str().map_or(
-                Err(Null),
-                |slice| Ok(String::from(slice)))
-        } else { Err(Null) }
+    pub fn get_title(self, display: &Display) ->
+        Result<String, <XWMName as Atom>::ErrorType> {
+        XWMName.get_as_property(display, &self)
     }
+
+    // pub fn get_roles(self, display: &Display) -> Result<Vec<String>, Null> {
+    //     let mut 
+    // }
 }

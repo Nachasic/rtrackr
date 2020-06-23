@@ -5,6 +5,8 @@ use x11::xlib::{
     Window as XWindow,
     XInternAtom,
     XGetWindowProperty,
+    XTextProperty,
+    XGetWMName,
     XFree,
     XA_WINDOW,
 };
@@ -19,6 +21,7 @@ use std::{
     slice,
     ffi::{
         CString,
+        CStr,
     }
 };
 use crate::*;
@@ -29,7 +32,7 @@ use crate::*;
 pub trait RawAtom {
     fn get(display: &Display) -> XAtom;
     fn get_expected_property_type(&self) -> XAtom;
-    fn get_as_raw_property(&self, display: &Display, window: &Window) -> Option<usize> {
+    fn get_as_raw_property(&self, display: &Display, window: &Window) -> Result<usize, Null> {
         let mut actual_type_return: XAtom = 0;
         let mut actual_format_return: c_int = 0;
         let mut num_items_return: c_ulong = 0;
@@ -65,19 +68,24 @@ pub trait RawAtom {
                         .first()
                         .map(|x| { *x })
                 },
-                _ => { None },
+                _ => { return Err(Null) },
             };
             unsafe { XFree(proper_return as *mut c_void) };
-            return value
+
+            match value {
+                None => return Err(Null),
+                Some(val) => return Ok(val)
+            };
         }
-        None
+        Err(Null)
     }
 }
 
 /// Trait used to convert raw property gotten from ffi
 /// to any internally used data structure
-pub trait Atom: RawAtom {
+pub trait Atom {
     type PropertyType;
+    type ErrorType;
 
     /// Gets window's property via this atom and converts the result
     /// to an internally used format.
@@ -85,7 +93,7 @@ pub trait Atom: RawAtom {
     /// Most implementations call 
     /// `RawAtom::get_as_raw_property(self, display, window)` internally to then
     /// convert raw results to `PropertyType`
-    fn get_as_property(&self, display: &Display, window: &Window) -> Option<Self::PropertyType>;
+    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType>;
 }
 
 /// Atom that corresponds with current active window under
@@ -106,6 +114,7 @@ impl RawAtom for XNetActiveWindow {
 }
 impl Atom for XNetActiveWindow {
     type PropertyType = Window;
+    type ErrorType = Null;
 
     /// Gets an active window object under a root window in a given display
     ///
@@ -119,9 +128,41 @@ impl Atom for XNetActiveWindow {
     /// let root_window = root_window.get_or_insert(Window::default_root_window(&display));
     /// let active_window: Window = XNetActiveWindow.get_as_property(display, root_window).unwrap();
     /// ```
-    fn get_as_property(&self, display: &Display, window: &Window) -> Option<Self::PropertyType> { 
+    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> { 
         RawAtom::get_as_raw_property(self, display, window).map(
             |res| Window (res as XWindow)
         )
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct XWMName;
+impl Atom for XWMName {
+    type PropertyType = String;
+    type ErrorType = Null;
+
+    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+        let mut text_property = XTextProperty {
+            value: null_mut(),
+            encoding: 0,
+            format: 0,
+            nitems: 0,
+        };
+        unsafe { 
+            XGetWMName(
+                display.0,
+                window.0,
+                &mut text_property,
+            )
+        };
+        if !text_property.value.is_null() {
+            let text = unsafe { CStr::from_ptr(text_property.value as *mut i8) };
+            text.to_str().map_or(
+                Err(Null),
+                |slice| Ok(String::from(slice))
+            )
+        } else {
+            Err(Null)
+        }
     }
 }
