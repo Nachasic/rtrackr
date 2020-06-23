@@ -13,6 +13,8 @@ use x11::xlib::{
     XA_WINDOW,
 };
 use std::{
+    error::{ Error },
+    fmt,
     os::raw::{
         c_ulong,
         c_void,
@@ -28,13 +30,59 @@ use std::{
 };
 use crate::*;
 
+#[derive(Debug)]
+pub enum XAtomError {
+    NoProperty(String),
+    FailedCString(std::str::Utf8Error)
+}
+
+impl fmt::Display for XAtomError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            XAtomError::FailedCString(ref err) => write!(f, "Failed to parse CString {}", err),
+            XAtomError::NoProperty(name) => write!(f, "Failed to retrieve property {} for a window", name)
+        }
+    }
+}
+
+impl Error for XAtomError {
+    fn description(&self) -> &str {
+        match self {
+            XAtomError::FailedCString(_) => "failed to parse CString",
+            XAtomError::NoProperty(_) => "failed to retrieve property WM_NAME for a window"
+        }
+    }
+
+    fn cause(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            XAtomError::FailedCString(ref err) => Some(err),
+            XAtomError::NoProperty(_) => None
+        }
+    }
+}
+
+impl From<std::str::Utf8Error> for XAtomError {
+    fn from(err: std::str::Utf8Error) -> Self {
+        XAtomError::FailedCString(err)
+    }
+}
+
 /// Trait used to get raw information from the atom via ffi
 ///
 /// `fn get` and `fn get_expected_property_type` are required for implementation
-pub trait RawAtom {
-    fn get(display: &Display) -> XAtom;
+pub trait RawAtom<'a> {
+    fn get_name() -> &'a str;
     fn get_expected_property_type(&self) -> XAtom;
-    fn get_as_raw_property(&self, display: &Display, window: &Window) -> Result<usize, Null> {
+    fn get(display: &Display) -> XAtom {
+        unsafe { XInternAtom(
+            display.0, 
+            CString::new(
+                XNetActiveWindow::get_name()
+            ).unwrap().as_ptr(), 
+            XTrue)
+        }
+    }
+    fn get_as_raw_property(&self, display: &Display, window: &Window) -> Result<usize, XAtomError> {
         let mut actual_type_return: XAtom = 0;
         let mut actual_format_return: c_int = 0;
         let mut num_items_return: c_ulong = 0;
@@ -70,16 +118,22 @@ pub trait RawAtom {
                         .first()
                         .map(|x| { *x })
                 },
-                _ => { return Err(Null) },
+                _ => { return Err(XAtomError::NoProperty(
+                    Self::get_name().to_owned()
+                )) },
             };
             unsafe { XFree(proper_return as *mut c_void) };
 
             match value {
-                None => return Err(Null),
+                None => return Err(XAtomError::NoProperty(
+                    Self::get_name().to_owned()
+                )),
                 Some(val) => return Ok(val)
             };
         }
-        Err(Null)
+        Err(XAtomError::NoProperty(
+            Self::get_name().to_owned()
+        ))
     }
 }
 
@@ -102,13 +156,9 @@ pub trait Atom {
 /// root window on a given display
 #[derive(Debug, Copy, Clone)]
 pub struct XNetActiveWindow;
-impl RawAtom for XNetActiveWindow {
-    fn get(display: &Display) -> XAtom {
-        unsafe { XInternAtom(
-            display.0, 
-            CString::new("_NET_ACTIVE_WINDOW").unwrap().as_ptr(), 
-            XTrue)
-        }
+impl <'a> RawAtom <'a> for XNetActiveWindow {
+    fn get_name() -> &'a str {
+        return "_NET_ACTIVE_WINDOW"
     }
     fn get_expected_property_type(&self) -> XAtom {
         XA_WINDOW
@@ -116,7 +166,7 @@ impl RawAtom for XNetActiveWindow {
 }
 impl Atom for XNetActiveWindow {
     type PropertyType = Window;
-    type ErrorType = Null;
+    type ErrorType = XAtomError;
 
     /// Gets an active window object under a root window in a given display
     ///
@@ -143,7 +193,7 @@ impl Atom for XNetActiveWindow {
 pub struct XWMName;
 impl Atom for XWMName {
     type PropertyType = String;
-    type ErrorType = Null;
+    type ErrorType = XAtomError;
 
     fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut text_property = XTextProperty {
@@ -161,12 +211,13 @@ impl Atom for XWMName {
         };
         if !text_property.value.is_null() {
             let text = unsafe { CStr::from_ptr(text_property.value as *mut i8) };
-            text.to_str().map_or(
-                Err(Null),
-                |slice| Ok(String::from(slice))
-            )
+
+            match text.to_str() {
+                Ok(slice) => Ok(String::from(slice)),
+                Err(err) => Err(XAtomError::from(err))
+            }
         } else {
-            Err(Null)
+            Err(XAtomError::NoProperty(String::from("WM_NAME")))
         }
     }
 }
@@ -177,7 +228,7 @@ impl Atom for XWMName {
 pub struct XWMClass;
 impl Atom for XWMClass {
     type PropertyType = (String, String);
-    type ErrorType = Null;
+    type ErrorType = XAtomError;
 
     fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut class_hint = XClassHint {
@@ -197,20 +248,12 @@ impl Atom for XWMClass {
             let name_text = unsafe { CStr::from_ptr(class_hint.res_name as *mut i8) };
             let class_text = unsafe { CStr::from_ptr(class_hint.res_class as *mut i8) };
 
-            name_text.to_str().map_or(
-                Err(Null),
-                |name_str| {
-                    class_text.to_str().map_or(
-                        Err(Null),
-                        |class_str| Ok(
-                            (String::from(name_str),
-                            String::from(class_str))
-                        )
-                    )
-                }
-            )
+            Ok((
+                String::from(name_text.to_str()?),
+                String::from(class_text.to_str()?)
+            ))
         } else {
-            Err(Null)
+            Err(XAtomError::NoProperty(String::from("WM_CLASS")))
         }
     }
 }
