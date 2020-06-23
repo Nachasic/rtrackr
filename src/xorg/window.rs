@@ -1,20 +1,14 @@
 use x11::xlib::{
     Window as XWindow,
     XDefaultRootWindow,
-    XGetWMName,
-    XTextProperty,
-};
-use std::{
-    ffi::CStr,
-    ptr::null_mut,
 };
 use crate::{
     Display,
     Session,
     XNetActiveWindow,
     XWMName,
+    XWMClass,
     Atom,
-    Null,
 };
 
 /// This struct represents a window and holds the ID of that window that can be used
@@ -49,7 +43,10 @@ impl Window {
         XWMName.get_as_property(display, &self)
     }
 
-    // pub fn get_roles(self, display: &Display) -> Result<Vec<String>, Null> {
-    //     let mut 
-    // }
+    // Gets application name and class of the window
+    pub fn get_name_and_class(self, display: &Display) ->
+        Result<(String, String), <XWMClass as Atom>::ErrorType> {
+            XWMClass.get_as_property(display, &self)
+        }
+
 }

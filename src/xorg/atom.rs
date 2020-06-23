@@ -6,7 +6,9 @@ use x11::xlib::{
     XInternAtom,
     XGetWindowProperty,
     XTextProperty,
+    XClassHint,
     XGetWMName,
+    XGetClassHint,
     XFree,
     XA_WINDOW,
 };
@@ -135,6 +137,8 @@ impl Atom for XNetActiveWindow {
     }
 }
 
+/// Atom for retrieving a name for a given window
+/// On a given display
 #[derive(Debug, Copy, Clone)]
 pub struct XWMName;
 impl Atom for XWMName {
@@ -160,6 +164,50 @@ impl Atom for XWMName {
             text.to_str().map_or(
                 Err(Null),
                 |slice| Ok(String::from(slice))
+            )
+        } else {
+            Err(Null)
+        }
+    }
+}
+
+/// Atom for retrieving class of a given window
+/// on a given display
+#[derive(Debug, Copy, Clone)]
+pub struct XWMClass;
+impl Atom for XWMClass {
+    type PropertyType = (String, String);
+    type ErrorType = Null;
+
+    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+        let mut class_hint = XClassHint {
+            res_class: null_mut(),
+            res_name: null_mut(),
+        };
+
+        unsafe {
+            XGetClassHint(
+                display.0,
+                window.0,
+                &mut class_hint
+            )
+        };
+
+        if !class_hint.res_name.is_null() && !class_hint.res_class.is_null() {
+            let name_text = unsafe { CStr::from_ptr(class_hint.res_name as *mut i8) };
+            let class_text = unsafe { CStr::from_ptr(class_hint.res_class as *mut i8) };
+
+            name_text.to_str().map_or(
+                Err(Null),
+                |name_str| {
+                    class_text.to_str().map_or(
+                        Err(Null),
+                        |class_str| Ok(
+                            (String::from(name_str),
+                            String::from(class_str))
+                        )
+                    )
+                }
             )
         } else {
             Err(Null)
