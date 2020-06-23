@@ -25,12 +25,12 @@ use std::{
 use crate::*;
 
 #[derive(Debug)]
-pub enum XAtomError {
-    NoProperty(String),
+pub enum XAtomError<'a> {
+    NoProperty(&'a str),
     FailedCString(std::str::Utf8Error)
 }
 
-impl fmt::Display for XAtomError {
+impl <'a> fmt::Display for XAtomError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             XAtomError::FailedCString(ref err) => write!(f, "Failed to parse CString {}", err),
@@ -39,7 +39,7 @@ impl fmt::Display for XAtomError {
     }
 }
 
-impl Error for XAtomError {
+impl <'a> Error for XAtomError<'a> {
     fn description(&self) -> &str {
         match self {
             XAtomError::FailedCString(_) => "failed to parse CString",
@@ -55,7 +55,7 @@ impl Error for XAtomError {
     }
 }
 
-impl From<std::str::Utf8Error> for XAtomError {
+impl <'a> From<std::str::Utf8Error> for XAtomError<'a> {
     fn from(err: std::str::Utf8Error) -> Self {
         XAtomError::FailedCString(err)
     }
@@ -66,17 +66,17 @@ impl From<std::str::Utf8Error> for XAtomError {
 /// `fn get_name` and `fn get_expected_property_type` are required for implementation
 pub trait RawAtom<'a> {
     fn get_name() -> &'a str;
-    fn get_expected_property_type(&self) -> XAtom;
+    fn get_expected_property_type() -> XAtom;
     fn get(display: &Display) -> XAtom {
         unsafe { XInternAtom(
             display.0, 
             CString::new(
-                XNetActiveWindow::get_name()
+                Self::get_name()
             ).unwrap().as_ptr(), 
             XTrue)
         }
     }
-    fn get_as_raw_property(&self, display: &Display, window: &Window) -> Result<usize, XAtomError> {
+    fn get_as_raw_property(display: &Display, window: &Window) -> Result<usize, XAtomError<'a>> {
         let mut actual_type_return: XAtom = 0;
         let mut actual_format_return: c_int = 0;
         let mut num_items_return: c_ulong = 0;
@@ -89,7 +89,7 @@ pub trait RawAtom<'a> {
             Self::get(&display),
             0, 4096 / 4,
             xFalse, 
-            self.get_expected_property_type(),
+            Self::get_expected_property_type(),
             &mut actual_type_return,
             &mut actual_format_return,
             &mut num_items_return,
@@ -113,20 +113,20 @@ pub trait RawAtom<'a> {
                         .map(|x| { *x })
                 },
                 _ => { return Err(XAtomError::NoProperty(
-                    Self::get_name().to_owned()
+                    Self::get_name()
                 )) },
             };
             unsafe { XFree(proper_return as *mut c_void) };
 
             match value {
                 None => return Err(XAtomError::NoProperty(
-                    Self::get_name().to_owned()
+                    Self::get_name()
                 )),
                 Some(val) => return Ok(val)
             };
         }
         Err(XAtomError::NoProperty(
-            Self::get_name().to_owned()
+            Self::get_name()
         ))
     }
 }
@@ -143,5 +143,5 @@ pub trait Atom {
     /// Most implementations call 
     /// `RawAtom::get_as_raw_property(self, display, window)` internally to then
     /// convert raw results to `PropertyType`
-    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType>;
+    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType>;
 }

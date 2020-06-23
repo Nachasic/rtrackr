@@ -32,19 +32,19 @@ impl Window {
     pub fn active_window(display: &Display) -> 
         Result<Window, <XNetActiveWindow as Atom>::ErrorType> {
             let root_window = Window::default_root_window(&display);
-            XNetActiveWindow.get_as_property(display, &root_window)
+            XNetActiveWindow::get_as_property(display, &root_window)
         }
 
     /// Gets the title of the window.
     pub fn get_title(self, display: &Display) ->
         Result<String, <XWMName as Atom>::ErrorType> {
-        XWMName.get_as_property(display, &self)
+            XWMName::get_as_property(display, &self)
     }
 
     // Gets application name and class of the window
     pub fn get_name_and_class(self, display: &Display) ->
         Result<(String, String), <XWMClass as Atom>::ErrorType> {
-            XWMClass.get_as_property(display, &self)
+            XWMClass::get_as_property(display, &self)
         }
 
 }

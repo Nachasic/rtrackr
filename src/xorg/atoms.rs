@@ -10,24 +10,27 @@ use x11::xlib::{
 use std::{
     ptr::null_mut,
     ffi::CStr,
+    marker::PhantomData,
 };
 use crate::*;
 
 /// Atom that corresponds with current active window under
 /// root window on a given display
 #[derive(Debug, Copy, Clone)]
-pub struct XNetActiveWindow;
-impl <'a> RawAtom <'a> for XNetActiveWindow {
+pub struct XNetActiveWindow<'a> {
+    phantom: PhantomData<&'a str>,
+}
+impl <'a> RawAtom <'a> for XNetActiveWindow <'a> {
     fn get_name() -> &'a str {
         return "_NET_ACTIVE_WINDOW"
     }
-    fn get_expected_property_type(&self) -> XAtom {
+    fn get_expected_property_type() -> XAtom {
         XA_WINDOW
     }
 }
-impl Atom for XNetActiveWindow {
+impl <'a> Atom for XNetActiveWindow <'a> {
     type PropertyType = Window;
-    type ErrorType = XAtomError;
+    type ErrorType = XAtomError<'a>;
 
     /// Gets an active window object under a root window in a given display
     ///
@@ -37,26 +40,27 @@ impl Atom for XNetActiveWindow {
     ///
     /// # Example
     /// ```
-    /// let Session { ref display, ref mut root_window, .. } = Session::open()?;
-    /// let root_window = root_window.get_or_insert(Window::default_root_window(&display));
-    /// let active_window: Window = XNetActiveWindow.get_as_property(display, root_window).unwrap();
+    /// let display = Display::open()?;
+    /// let root_window = Window::default_root_window(&display);
+    /// let active_window = XNetActiveWindow.get_as_property(&display, &root_window)?;
     /// ```
-    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> { 
-        RawAtom::get_as_raw_property(self, display, window).map(
-            |res| Window (res as XWindow)
-        )
+    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+        let raw_window = Self::get_as_raw_property(display, window)?;
+        Ok(Window(raw_window as XWindow))
     }
 }
 
 /// Atom for retrieving a name for a given window
 /// On a given display
 #[derive(Debug, Copy, Clone)]
-pub struct XWMName;
-impl Atom for XWMName {
+pub struct XWMName<'a> {
+    phantom: PhantomData<&'a str>
+}
+impl <'a> Atom for XWMName<'a> {
     type PropertyType = String;
-    type ErrorType = XAtomError;
+    type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut text_property = XTextProperty {
             value: null_mut(),
             encoding: 0,
@@ -78,7 +82,7 @@ impl Atom for XWMName {
                 Err(err) => Err(XAtomError::from(err))
             }
         } else {
-            Err(XAtomError::NoProperty(String::from("WM_NAME")))
+            Err(XAtomError::NoProperty("WM_NAME"))
         }
     }
 }
@@ -86,12 +90,14 @@ impl Atom for XWMName {
 /// Atom for retrieving class of a given window
 /// on a given display
 #[derive(Debug, Copy, Clone)]
-pub struct XWMClass;
-impl Atom for XWMClass {
+pub struct XWMClass<'a> {
+    phantom: PhantomData<&'a str>
+}
+impl <'a> Atom for XWMClass<'a> {
     type PropertyType = (String, String);
-    type ErrorType = XAtomError;
+    type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(&self, display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut class_hint = XClassHint {
             res_class: null_mut(),
             res_name: null_mut(),
@@ -114,7 +120,7 @@ impl Atom for XWMClass {
                 String::from(class_text.to_str()?)
             ))
         } else {
-            Err(XAtomError::NoProperty(String::from("WM_CLASS")))
+            Err(XAtomError::NoProperty("WM_CLASS"))
         }
     }
 }
