@@ -9,7 +9,7 @@ use x11::xlib::{
 };
 use std::{
     ptr::null_mut,
-    ffi::{ CStr, CString },
+    ffi::{ CStr },
     marker::PhantomData,
 };
 use crate::*;
@@ -77,10 +77,7 @@ impl <'a> Atom for XWMName<'a> {
         if !text_property.value.is_null() {
             let text = unsafe { CStr::from_ptr(text_property.value as *mut i8) };
 
-            match text.to_str() {
-                Ok(slice) => Ok(String::from(slice)),
-                Err(err) => Err(XAtomError::from(err))
-            }
+            Ok(text.to_string_lossy().into_owned())
         } else {
             Err(XAtomError::NoProperty("WM_NAME"))
         }
@@ -122,19 +119,5 @@ impl <'a> Atom for XWMClass<'a> {
         } else {
             Err(XAtomError::NoProperty("WM_CLASS"))
         }
-    }
-}
-
-#[test]
-fn s_string_parsing_test() {
-    unsafe  {
-        let string = CString::new("·").expect("Failed to create CString");
-        let ptr = string.as_ptr() as *const u8;
-        let len: usize = 2;
-        let bytes = std::slice::from_raw_parts(ptr, len + 1);
-        let cstring = CStr::from_bytes_with_nul_unchecked(bytes);
-        // let cstring = CStr::from_bytes_with_nul_unchecked(string.to_bytes_with_nul());
-
-        assert_eq!(cstring, &*string)
     }
 }

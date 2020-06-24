@@ -1,5 +1,3 @@
-use crate::*;
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WindowInfo {
     pub uid: u64,

@@ -34,12 +34,8 @@ fn report_change(info: &WindowInfo) {
     println!("Window UID {:?}", info.uid);
 }
 
-fn run(mut state: &mut AppState, display: &Display, root_window: u64) -> Result<(), Box<dyn std::error::Error>> {
+fn run(state: &mut AppState, display: &Display, root_window: u64) -> Result<(), Box<dyn std::error::Error>> {
     let active_window_uid = XNetActiveWindow::get_as_property(&display, root_window)?;
-
-    if active_window_uid == 50331651 {
-        println!("DANGER");
-    }
 
     let title = XWMName::get_as_property(&display, active_window_uid)?;
     let (app_name, app_class) = XWMClass::get_as_property(&display, active_window_uid)?;
