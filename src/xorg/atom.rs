@@ -5,7 +5,7 @@ use x11::xlib::{
     XInternAtom,
     XGetWindowProperty,
     XFree,
-
+    Window
 };
 use std::{
     error::{ Error },
@@ -76,7 +76,7 @@ pub trait RawAtom<'a> {
             XTrue)
         }
     }
-    fn get_as_raw_property(display: &Display, window: &Window) -> Result<usize, XAtomError<'a>> {
+    fn get_as_raw_property(display: &Display, window: Window) -> Result<usize, XAtomError<'a>> {
         let mut actual_type_return: XAtom = 0;
         let mut actual_format_return: c_int = 0;
         let mut num_items_return: c_ulong = 0;
@@ -85,7 +85,7 @@ pub trait RawAtom<'a> {
 
         if unsafe { XGetWindowProperty(
             display.0,
-            window.0, 
+            window, 
             Self::get(&display),
             0, 4096 / 4,
             xFalse, 
@@ -143,5 +143,5 @@ pub trait Atom {
     /// Most implementations call 
     /// `RawAtom::get_as_raw_property(self, display, window)` internally to then
     /// convert raw results to `PropertyType`
-    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType>;
+    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType>;
 }

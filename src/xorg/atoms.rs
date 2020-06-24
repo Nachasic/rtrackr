@@ -1,5 +1,5 @@
 use x11::xlib::{
-    Window as XWindow,
+    Window,
     Atom as XAtom,
     XA_WINDOW,
     XTextProperty,
@@ -44,9 +44,9 @@ impl <'a> Atom for XNetActiveWindow <'a> {
     /// let root_window = Window::default_root_window(&display);
     /// let active_window = XNetActiveWindow.get_as_property(&display, &root_window)?;
     /// ```
-    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
-        let raw_window = Self::get_as_raw_property(display, window)?;
-        Ok(Window(raw_window as XWindow))
+    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
+        let raw_window = Self::get_as_raw_property(display, window)? as Window;
+        Ok(raw_window)
     }
 }
 
@@ -60,7 +60,7 @@ impl <'a> Atom for XWMName<'a> {
     type PropertyType = String;
     type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut text_property = XTextProperty {
             value: null_mut(),
             encoding: 0,
@@ -70,7 +70,7 @@ impl <'a> Atom for XWMName<'a> {
         unsafe { 
             XGetWMName(
                 display.0,
-                window.0,
+                window,
                 &mut text_property,
             )
         };
@@ -97,7 +97,7 @@ impl <'a> Atom for XWMClass<'a> {
     type PropertyType = (String, String);
     type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(display: &Display, window: &Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut class_hint = XClassHint {
             res_class: null_mut(),
             res_name: null_mut(),
@@ -106,7 +106,7 @@ impl <'a> Atom for XWMClass<'a> {
         unsafe {
             XGetClassHint(
                 display.0,
-                window.0,
+                window,
                 &mut class_hint
             )
         };

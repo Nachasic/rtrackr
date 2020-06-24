@@ -1,10 +1,11 @@
 use x11::xlib::{
     Display as XDisplay,
+    Window,
     XOpenDisplay,
     XCloseDisplay,
     XDefaultRootWindow
 };
-use crate::Window;
+// use crate::Window;
 use std::{
     ptr::null,
     ops::Drop
@@ -28,8 +29,7 @@ impl Display {
     }
 
     pub fn get_default_root_window (&self) -> Window {
-        let win = unsafe { XDefaultRootWindow(self.0) };
-        Window(win)
+        unsafe { XDefaultRootWindow(self.0) }
     }
 }
 
