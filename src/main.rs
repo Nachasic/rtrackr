@@ -12,9 +12,11 @@ fn run () -> Result<(), Box<dyn std::error::Error>> {
     println!("Title {:?}", title);
     println!("Application name {:?}", app_name);
     println!("Class {:?}", app_class);
+    println!("Window ID {:?}", active_window.0);
     Ok({})
 
 }
+
 fn main () {
     match run() {
         Err(err) => println!("FATAL ERROR: {}", err),
