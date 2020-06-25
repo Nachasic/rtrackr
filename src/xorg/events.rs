@@ -9,7 +9,7 @@ pub struct MouseState {
     pub button_pressed: Vec<bool>
 }
 
-pub fn query_pointer(display: &Display, root_window: Window) -> MouseState {
+pub fn query_mouse_pointer(display: &Display, root_window: Window) -> MouseState {
     let mut root_x = 0;
     let mut root_y = 0;
     let mut win_x = 0;
@@ -52,7 +52,7 @@ pub fn query_pointer(display: &Display, root_window: Window) -> MouseState {
     }
 }
 
-pub fn query_keymap(display: &Display) -> Vec<u8> {
+pub fn query_keyboard(display: &Display) -> Vec<u8> {
     let mut keycodes = vec![];
     unsafe {
         let keymap: *mut i8 = [0; 32].as_mut_ptr();
