@@ -2,7 +2,7 @@ mod xorg;
 mod window;
 
 use xorg::*;
-use std::{ thread, time };
+use std::{ time };
 use window::WindowInfo;
 
 struct AppState {
@@ -94,7 +94,11 @@ fn run(state: &mut AppState, display: &Display, root_window: u64) -> Result<(), 
     state.tick();
     state.updated_mouse_pos(mouse.coords);
     
-    report_change(&active_window, state.seconds_since_active);
+    if state.seconds_since_active > 10 {
+        report_afk();
+    } else {
+        report_change(&active_window, state.seconds_since_active);
+    }
     Ok({})
 }
 
