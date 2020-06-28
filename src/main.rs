@@ -1,29 +1,36 @@
 mod xorg;
 mod window;
 mod state;
+mod tui;
+mod event;
 
 use xorg::*;
-use std::{ time };
+use std::{ 
+    time,
+    io::{ stdin }
+};
 use window::WindowInfo;
 use state::AppState;
+use event::*;
+use tokio::*;
 
 fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 } 
 
-fn report_change(title: &String, name: &String, class: &String, uid: u64, afk_seconds: u64) {
-    clear_screen();
-    println!("Window title {:?}", title);
-    println!("Appliction name {:?}", name);
-    println!("Application class {:?}", class);
-    println!("Window UID {:?}", uid);
-    println!("Last action since {:?}", afk_seconds);
-}
+// fn report_change(title: &String, name: &String, class: &String, uid: u64, afk_seconds: u64) {
+//     clear_screen();
+//     println!("Window title {:?}", title);
+//     println!("Appliction name {:?}", name);
+//     println!("Application class {:?}", class);
+//     println!("Window UID {:?}", uid);
+//     println!("Last action since {:?}", afk_seconds);
+// }
 
-fn report_afk() {
-    clear_screen();
-    println!("AFK");
-}
+// fn report_afk() {
+//     clear_screen();
+//     println!("AFK");
+// }
 
 fn update_window_info(state: &mut AppState, display: &Display, root_window: u64) -> Result<(), Box<dyn std::error::Error>> {
     let active_window_uid = XNetActiveWindow::get_as_property(&display, root_window)?;
@@ -39,7 +46,8 @@ fn update_window_info(state: &mut AppState, display: &Display, root_window: u64)
     Ok({})
 }
 
-fn main_loop() {
+
+async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = AppState::new();
 
     let mut is_running = true;
@@ -49,7 +57,12 @@ fn main_loop() {
 
     let display = Display::open().unwrap();
     let root_window = display.get_default_root_window();
-    
+
+    let events = Events::with_config(EventConfig::default());
+
+    clear_screen();
+    let mut tui = tui::Tui::new()?;
+
     while is_running {
         let keys = query_keyboard(&display);
         let mouse = query_mouse_pointer(&display, root_window);
@@ -64,18 +77,29 @@ fn main_loop() {
         state.updated_mouse_info(&mouse);
 
         if time_elapsed > sleep_duration {
-            match update_window_info(&mut state, &display, root_window) {
-                Err(err) => {
-                    println!("FATAL ERROR: {}", err);
-                    is_running = false;
-                },
-                Ok(_) => { cycle_start_time = current_time },
+            update_window_info(&mut state, &display, root_window)?;
+            cycle_start_time = current_time;
+        }
+
+        if let Ok(event) = events.next() {
+            match event {
+                Event::Input(key) =>
+                    match key {
+                        Key::Ctrl('c') => is_running = false,
+                        _ => {}
+                    }
+                Event::Tick => tui.draw()?,
             }
         }
     };
+    Ok({})
 }
 
-fn main() {
-    main_loop();
+#[tokio::main]
+async fn main() {
+    match main_loop().await {
+        Err(err) => println!("FATAL ERROR: {}", err),
+        Ok(_) => {}
+    };
     println!("Done, goodbye!");
 }

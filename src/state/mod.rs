@@ -1,12 +1,19 @@
+mod ui;
 use std::time;
 use crate::{
     WindowInfo,
     MouseState
 };
+use ui::*;
+
 pub struct AppState {
+    // Tracking information
     pub active_window_info: Option<WindowInfo>,
     last_moment_active: time::SystemTime,
-    last_mouse_position: (i32, i32)
+    last_mouse_position: (i32, i32),
+
+    // TUI state
+    pub router: Router,
 }
 
 impl AppState {
@@ -15,6 +22,7 @@ impl AppState {
             active_window_info: None,
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
+            router: Router::default(),
         }
     }
 
