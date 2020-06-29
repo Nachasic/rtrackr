@@ -3,14 +3,16 @@ mod window;
 mod state;
 mod tui;
 mod event;
+mod window_manager;
 
-use xorg::*;
 use std::{ 
     time,
 };
 use window::WindowInfo;
 use state::AppState;
 use event::*;
+use window_manager::{ OSWindowManager, MouseState };
+use xorg::{ XORGWindowManager };
 
 #[macro_use]
 extern crate lazy_static;
@@ -19,15 +21,9 @@ fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
 
-fn update_window_info(state: &mut AppState, display: &Display, root_window: u64) -> Result<(), Box<dyn std::error::Error>> {
-    let active_window_uid = XNetActiveWindow::get_as_property(&display, root_window)?;
-    let title = XWMName::get_as_property(&display, active_window_uid)?;
-    let (app_name, app_class) = XWMClass::get_as_property(&display, active_window_uid)?;
-
-    let active_window = WindowInfo::build(active_window_uid)
-        .with_title(title)
-        .with_app_name(app_name)
-        .with_app_class(app_class);
+fn update_window_info<T>(wm: &T, state: &mut AppState) -> Result<(), Box<dyn std::error::Error>>
+where T: OSWindowManager  {
+    let active_window = wm.get_window_info()?;
 
     state.updated_window_info(&active_window);
     Ok({})
@@ -36,14 +32,12 @@ fn update_window_info(state: &mut AppState, display: &Display, root_window: u64)
 
 async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = AppState::new();
+    let wm = XORGWindowManager::default();
 
     let mut is_running = true;
     let mut cycle_start_time = time::SystemTime::now();
     let mut time_elapsed = time::Duration::new(0, 0);
     let sleep_duration = time::Duration::new(1, 0);
-
-    let display = Display::open().unwrap();
-    let root_window = display.get_default_root_window();
 
     let events = Events::with_config(EventConfig::default());
 
@@ -51,8 +45,8 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let mut tui = tui::Tui::new()?;
 
     while is_running {
-        let keys = query_keyboard(&display);
-        let mouse = query_mouse_pointer(&display, root_window);
+        let keys = wm.query_keyboard();
+        let mouse = wm.query_mouse_pointer();
         let current_time = time::SystemTime::now();
 
         time_elapsed = 
@@ -64,7 +58,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
         state.updated_mouse_info(&mouse);
 
         if time_elapsed > sleep_duration {
-            update_window_info(&mut state, &display, root_window)?;
+            update_window_info(&wm, &mut state)?;
             cycle_start_time = current_time;
         }
 

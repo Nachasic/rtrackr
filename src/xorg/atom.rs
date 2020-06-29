@@ -22,7 +22,7 @@ use std::{
         CString,
     }
 };
-use crate::*;
+use super::display::*;
 
 #[derive(Debug)]
 pub enum XAtomError<'a> {

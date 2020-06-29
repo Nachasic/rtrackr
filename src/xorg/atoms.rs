@@ -12,7 +12,10 @@ use std::{
     ffi::{ CStr },
     marker::PhantomData,
 };
-use crate::*;
+use super::{
+    display::*,
+    atom::*
+};
 
 /// Atom that corresponds with current active window under
 /// root window on a given display

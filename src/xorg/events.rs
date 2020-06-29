@@ -2,12 +2,10 @@
 use x11::xlib::*;
 use std::slice;
 
-use crate::Display;
-
-pub struct MouseState {
-    pub coords: (i32, i32),
-    pub button_pressed: Vec<bool>
-}
+use super::display::{ Display };
+use crate::{
+    window_manager::MouseState
+};
 
 pub fn query_mouse_pointer(display: &Display, root_window: Window) -> MouseState {
     let mut root_x = 0;

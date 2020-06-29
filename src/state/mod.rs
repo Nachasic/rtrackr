@@ -2,7 +2,7 @@ mod ui;
 use std::time;
 use crate::{
     WindowInfo,
-    MouseState
+    window_manager::MouseState
 };
 use ui::*;
 
