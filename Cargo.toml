@@ -11,3 +11,4 @@ x11 = { version = "2.18", features = ["xlib"] }
 tui = { version = "0.9", features = ["crossterm"] }
 crossterm = "0.17.5"
 tokio = { version = "0.2", features = ["full"] }
+lazy_static = "1.4.0"

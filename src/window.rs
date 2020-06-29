@@ -36,6 +36,14 @@ impl WindowInfo {
             self.app_class = Some(app_class.into());
             self
         }
+
+    pub fn get_strings(&self) -> [String; 3] {
+        let NONE = String::from("None");
+        let title = self.title.as_ref().unwrap_or_else(|| &NONE).to_owned();
+        let app_name = self.app_name.as_ref().unwrap_or_else(|| &NONE).to_owned();
+        let app_class = self.app_class.as_ref().unwrap_or_else(|| &NONE).to_owned();
+        [title, app_name, app_class]
+    }
 }
 
 impl PartialEq for WindowInfo {

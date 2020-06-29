@@ -508,6 +508,7 @@ name = "trackr"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "lazy_static",
  "tokio",
  "tui",
  "x11",

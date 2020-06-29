@@ -14,6 +14,9 @@ use state::AppState;
 use event::*;
 use tokio::*;
 
+#[macro_use]
+extern crate lazy_static;
+
 fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 } 
@@ -88,7 +91,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
                         Key::Ctrl('c') => is_running = false,
                         _ => {}
                     }
-                Event::Tick => tui.draw()?,
+                Event::Tick => tui.draw(&mut state)?,
             }
         }
     };
@@ -102,4 +105,5 @@ async fn main() {
         Ok(_) => {}
     };
     println!("Done, goodbye!");
+    clear_screen();
 }
