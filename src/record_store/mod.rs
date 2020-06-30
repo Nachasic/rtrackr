@@ -20,4 +20,3 @@ pub enum Archetype {
     ActiveWindow(String, String, String),
     AFK
 }
-

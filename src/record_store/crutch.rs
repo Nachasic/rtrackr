@@ -8,6 +8,8 @@ use std::fmt::Debug;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+/// Unused shit to make MemoryDatabase and FileDatabase work
+/// Through the same trait. Didn't work for some reason ┐( ᐛ )┌
 pub trait DB<Data>
 where Data: Serialize + DeserializeOwned + Debug + Clone + Send {
     fn write<T, R>(&self, task: T) -> rustbreak::error::Result<R>

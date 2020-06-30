@@ -1,36 +1,45 @@
-use chrono::{ 
-    Local,
-    DateTime,
+use chrono::{
     NaiveDate,
-    ParseError
 };
 use rustbreak::{ 
-    Database,
     MemoryDatabase,
     FileDatabase,
-    deser::Bincode
+    deser::Bincode,
+    RustbreakError
 };
 use directories::{
     ProjectDirs
 };
-use super::utils;
+use super::{
+    ActivityRecord,
+    utils::{
+        get_db_dates,
+        get_dir,
+        soft_push_current_date,
+        create_db_for_current_date,
+        EitherOrNone,
+    }
+};
 
 pub struct RecordStore {
-    pub is_file_db: bool,
     pub available_date_records: Vec<NaiveDate>,
+    db: EitherOrNone<
+        Box<FileDatabase<Vec<ActivityRecord>, Bincode>>,
+        Box<MemoryDatabase<Vec<ActivityRecord>, Bincode>>
+    >
 }
 
 impl Default for RecordStore {
     fn default() -> Self {
         Self {
-            is_file_db: false,
             available_date_records: vec![],
+            db: EitherOrNone::None
         }
     }
 }
 
 impl RecordStore {
-    fn with_db(&mut self) -> &mut Self {
+    pub fn with_db(&mut self) -> Result<&mut Self, RustbreakError> {
         let path = ProjectDirs::from(
             "", 
             "Immortal Science", 
@@ -41,6 +50,7 @@ impl RecordStore {
                 eprintln!("{}", [
                     "Could not retrieve application data paths from OS to access database files.",
                     "Will proceed with in-memory database for now.",
+                    "Your tracking data WILL NOT be saved once the application is closed.",
                     "Your OS may not be supported - plase submit an issue at",
                     "https://github.com/Nachasic/rtrackr/issues"
                 ].join("\n"));
@@ -49,14 +59,17 @@ impl RecordStore {
         }
     }
 
-    fn create_file_db(&mut self, dirs: ProjectDirs) -> &mut Self{
+    fn create_file_db(&mut self, dirs: ProjectDirs) -> Result<&mut Self, RustbreakError> {
         let data_path = dirs.data_dir();
 
-        match utils::get_dir(data_path) {
+        match get_dir(data_path) {
             Ok(dir) => {
-                self.available_date_records = utils::get_db_dates(dir);
-                // create DB for current date
-                self
+                self.available_date_records = get_db_dates(dir);
+                self.db = EitherOrNone::Either(Box::new(
+                    create_db_for_current_date(&mut self.available_date_records, data_path)?
+                ));
+
+                Ok(self)
             },
             Err(err) => {
                 eprintln!("{}{}", [
@@ -70,8 +83,11 @@ impl RecordStore {
         }
     }
 
-    fn create_memory_db(&mut self) -> &mut Self {
-        self
+    fn create_memory_db(&mut self) -> Result<&mut Self, RustbreakError> {
+        soft_push_current_date(&mut self.available_date_records);
+        let db = MemoryDatabase::<Vec<ActivityRecord>, Bincode>::memory(vec![])?;
+        self.db = EitherOrNone::Or(Box::new(db));
+        Ok(self)
     }
 }
 
