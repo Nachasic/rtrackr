@@ -1,5 +1,6 @@
 mod tracker;
 mod store;
+mod utils;
 
 use std::time::{
     Duration,
