@@ -54,7 +54,7 @@ impl RecordTracker {
 }
 
 #[test]
-fn basic_test() {
+fn report_production() {
     let mut tracker = RecordTracker::new();
     let arch = Archetype::ActiveWindow(
         String::from("title"),

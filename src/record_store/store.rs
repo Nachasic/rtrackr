@@ -17,7 +17,7 @@ use super::utils;
 
 pub struct RecordStore {
     pub is_file_db: bool,
-    pub available_date_records: Vec<NaiveDate>
+    pub available_date_records: Vec<NaiveDate>,
 }
 
 impl Default for RecordStore {

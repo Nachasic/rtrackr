@@ -20,9 +20,11 @@ use rustbreak::{
     MemoryDatabase,
     FileDatabase,
     deser::Bincode,
-    RustbreakError
+    RustbreakError,
+    backend::Backend
 };
-use super::ActivityRecord;
+
+use super::{ ActivityRecord };
 
 /// Gets application's data directory where activity records are stored.
 ///
@@ -85,7 +87,7 @@ fn get_path_for_new_db(dir_path: &Path, date: &NaiveDate) -> PathBuf {
 }
 
 pub fn create_db_for_current_date(dates: &mut Vec<NaiveDate>, dir_path: &Path)
--> Result<FileDatabase<Vec<ActivityRecord>, Bincode>, RustbreakError> {
+    -> Result<FileDatabase<Vec<ActivityRecord>, Bincode>, RustbreakError> {
     let most_recent = dates[0];
     let current_date = Local::today().naive_local();
     if most_recent != current_date {
