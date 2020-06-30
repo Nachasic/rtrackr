@@ -16,8 +16,8 @@ use directories::{
 use super::utils;
 
 pub struct RecordStore {
-    is_file_db: bool,
-    available_date_records: Vec<NaiveDate>
+    pub is_file_db: bool,
+    pub available_date_records: Vec<NaiveDate>
 }
 
 impl Default for RecordStore {
@@ -39,7 +39,8 @@ impl RecordStore {
             Some(dirs) => self.create_file_db(dirs),
             None => {
                 eprintln!("{}", [
-                    "Could not retrieve application data paths from OS.",
+                    "Could not retrieve application data paths from OS to access database files.",
+                    "Will proceed with in-memory database for now.",
                     "Your OS may not be supported - plase submit an issue at",
                     "https://github.com/Nachasic/rtrackr/issues"
                 ].join("\n"));
@@ -58,13 +59,12 @@ impl RecordStore {
                 self
             },
             Err(err) => {
-                eprintln!("{}{}",
-                    [
-                        "Could not access application's data directory to create database files.",
-                        "Will proceed with in-memory database for now.",
-                        "Your tracking data WILL NOT be saved once the application is closed.",
-                        "If this issue persists you can report it at https://github.com/Nachasic/rtrackr/issues"
-                    ].join("\n"),err);
+                eprintln!("{}{}", [
+                    "Could not access application's data directory to access database files.",
+                    "Will proceed with in-memory database for now.",
+                    "Your tracking data WILL NOT be saved once the application is closed.",
+                    "If this issue persists you can report it at https://github.com/Nachasic/rtrackr/issues"
+                ].join("\n"), err);
                 self.create_memory_db()
             }
         }

@@ -1,22 +1,33 @@
 use std::{
-    path::Path,
+    path::{ Path, PathBuf },
     cmp::Ordering,
     fs::{
         read_dir,
         create_dir,
         ReadDir
     },
-    ffi::OsString
+    ffi::{ OsStr },
 };
 use chrono::{
     NaiveDate,
+    Date,
+    DateTime,
+    Local,
     ParseError
 };
+use rustbreak::{ 
+    Database,
+    MemoryDatabase,
+    FileDatabase,
+    deser::Bincode,
+    RustbreakError
+};
+use super::ActivityRecord;
 
 /// Gets application's data directory where activity records are stored.
 ///
 /// If such directory doesn't exist, attempts to create one
-pub fn get_dir(dir_path: &Path) -> Result<ReadDir, Box<dyn std::error::Error>> {
+pub fn get_dir(dir_path: &Path) -> Result<ReadDir, std::io::Error> {
     Ok(match read_dir(dir_path) {
         Ok(data) => data,
         Err(_) => {
@@ -26,7 +37,7 @@ pub fn get_dir(dir_path: &Path) -> Result<ReadDir, Box<dyn std::error::Error>> {
     })
 }
 
-pub fn date_from_file_name (file_name: &OsString) -> Result<NaiveDate, ParseError> {
+pub fn date_from_file_name (file_name: &OsStr) -> Result<NaiveDate, ParseError> {
     let file_name_str = &*file_name.to_string_lossy();
     NaiveDate::parse_from_str(file_name_str, "%Y-%m-%d")
 }
@@ -44,7 +55,9 @@ pub fn get_db_dates(dir: ReadDir) -> Vec<NaiveDate> {
     for result in dir {
         match result {
             Ok(entry) => {
-                match date_from_file_name(&entry.file_name()) {
+                let path = entry.path();
+                let name = path.file_stem().unwrap();
+                match date_from_file_name(name) {
                     Ok(date) => { dates.push(date); },
                     _ => {}
                 }
@@ -64,9 +77,29 @@ pub fn get_db_dates(dir: ReadDir) -> Vec<NaiveDate> {
     dates
 }
 
+fn get_path_for_new_db(dir_path: &Path, date: &NaiveDate) -> PathBuf {
+    let date_str = date.format("%Y-%m-%d").to_string();
+    let file_path = format!("{}.db", date_str);
+
+    dir_path.join(file_path)
+}
+
+pub fn create_db_for_current_date(dates: &mut Vec<NaiveDate>, dir_path: &Path)
+-> Result<FileDatabase<Vec<ActivityRecord>, Bincode>, RustbreakError> {
+    let most_recent = dates[0];
+    let current_date = Local::today().naive_local();
+    if most_recent != current_date {
+        dates.push(current_date);
+    }
+
+    let db_path = get_path_for_new_db(dir_path, &current_date);
+
+    FileDatabase::<Vec<ActivityRecord>, Bincode>::from_path(db_path, vec![])
+}
+
 #[test]
 fn date_from_os_string() {
-    let string = OsString::from("2020-05-05");
+    let string = OsStr::new("2020-05-05");
     let result = date_from_file_name(&string);
     let expected_date = NaiveDate::from_ymd(2020, 05, 05);
 
@@ -97,7 +130,6 @@ fn db_access_no_dir() {
     std::fs::remove_dir(path).unwrap();
 }
 
-
 #[test]
 fn getting_dates_from_dir() {
     let path = Path::new("./test-data/db_access");
@@ -108,4 +140,26 @@ fn getting_dates_from_dir() {
         NaiveDate::from_ymd(2020, 05, 06),
         NaiveDate::from_ymd(2020, 05, 05)
     ]);
+}
+
+#[test]
+fn creating_db() {
+    let path = Path::new("./test-data/db_access");
+    let dir = get_dir(path).unwrap();
+    let mut dates = get_db_dates(dir);
+
+    let current_date = Local::today().naive_local();
+    let db_file_path = get_path_for_new_db(path, &current_date);
+
+    let db = create_db_for_current_date(&mut dates, path);
+
+    assert!(match db {
+        Ok(_) => true,
+        Err(err) => {
+            dbg!(err);
+            false
+        }
+    });
+
+    std::fs::remove_file(&db_file_path).unwrap();
 }

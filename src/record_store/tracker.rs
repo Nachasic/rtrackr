@@ -5,12 +5,12 @@ use super::*;
 
 
 #[derive(Debug)]
-pub struct RecordTracker <'a> {
-    current_archetype: Option<Archetype<'a>>,
+pub struct RecordTracker {
+    current_archetype: Option<Archetype>,
     time_of_first_submission: SystemTime,
 }
 
-impl <'a> RecordTracker <'a> {
+impl RecordTracker {
     pub fn new() -> Self {
         Self {
             current_archetype: None,
@@ -18,7 +18,7 @@ impl <'a> RecordTracker <'a> {
         }
     }
 
-    pub fn ping(&'a mut self, arch: Archetype<'a>) -> Option<ActivityRecord> {
+    pub fn ping(&mut self, arch: Archetype) -> Option<ActivityRecord> {
         let current = &self.current_archetype;
 
         match current {
@@ -56,7 +56,10 @@ impl <'a> RecordTracker <'a> {
 #[test]
 fn basic_test() {
     let mut tracker = RecordTracker::new();
-    let arch = Archetype::ActiveWindow("title", "my_app", "basic app");
+    let arch = Archetype::ActiveWindow(
+        String::from("title"),
+        String::from("my_app"),
+        String::from("basic app"));
 
     let report = tracker.ping(arch);
 

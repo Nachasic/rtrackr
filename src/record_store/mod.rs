@@ -3,19 +3,20 @@ mod store;
 mod utils;
 
 use std::time::{
-    Duration,
     SystemTime
 };
+use serde::{ Serialize, Deserialize };
 
-pub struct ActivityRecord <'a> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityRecord {
     time_range: (SystemTime, SystemTime),
-    archetype: Archetype<'a>
+    archetype: Archetype
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Archetype <'a> {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Archetype {
     // Stores title, app name and app class in that order
-    ActiveWindow(&'a str, &'a str, &'a str),
+    ActiveWindow(String, String, String),
     AFK
 }
 
