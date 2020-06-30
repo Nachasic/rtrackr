@@ -20,6 +20,8 @@ use super::{
         EitherOrNone,
     }
 };
+use std::path::Path;
+use super::config::RecordStoreConfig;
 
 pub struct RecordStore {
     pub available_date_records: Vec<NaiveDate>,
@@ -39,29 +41,11 @@ impl Default for RecordStore {
 }
 
 impl RecordStore {
-    pub fn with_db(&mut self) -> Result<&mut Self, RustbreakError> {
-        let path = ProjectDirs::from(
-            "", 
-            "Immortal Science", 
-            "rtrackr");
-        match path {
-            Some(dirs) => self.create_file_db(dirs),
-            None => {
-                eprintln!("{}", [
-                    "Could not retrieve application data paths from OS to access database files.",
-                    "Will proceed with in-memory database for now.",
-                    "Your tracking data WILL NOT be saved once the application is closed.",
-                    "Your OS may not be supported - plase submit an issue at",
-                    "https://github.com/Nachasic/rtrackr/issues"
-                ].join("\n"));
-                self.create_memory_db()
-            }
-        }
+    pub fn with_db(&mut self, config: &RecordStoreConfig) -> Result<&mut Self, RustbreakError> {
+        self.create_file_db(config.data_dir.as_path())
     }
 
-    fn create_file_db(&mut self, dirs: ProjectDirs) -> Result<&mut Self, RustbreakError> {
-        let data_path = dirs.data_dir();
-
+    fn create_file_db(&mut self, data_path: &Path) -> Result<&mut Self, RustbreakError> {
         match get_dir(data_path) {
             Ok(dir) => {
                 self.available_date_records = get_db_dates(dir);

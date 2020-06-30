@@ -149,77 +149,87 @@ pub fn create_db_for_current_date(dates: &mut Vec<NaiveDate>, dir_path: &Path)
     FileDatabase::<Vec<ActivityRecord>, Bincode>::from_path(db_path, vec![])
 }
 
-#[test]
-fn soft_push_to_empty_date_vec() {
-    let mut dates: Vec<NaiveDate> = vec![];
+#[cfg(test)]
+mod tests {
+    use super::{
+        super::{ RecordStoreConfig },
+        *
+    };
 
-    soft_push_current_date(&mut dates);
-    assert_eq!(dates.len(), 1);
+    #[test]
+    fn soft_push_to_empty_date_vec() {
+        let mut dates: Vec<NaiveDate> = vec![];
+    
+        soft_push_current_date(&mut dates);
+        assert_eq!(dates.len(), 1);
+    }
+    
+    #[test]
+    fn date_from_os_string() {
+        let string = OsStr::new("2020-05-05");
+        let result = date_from_file_name(&string);
+        let expected_date = NaiveDate::from_ymd(2020, 05, 05);
+    
+        assert_eq!(result, Ok(expected_date));
+    }
+    
+    #[test]
+    fn db_access() {
+        let path = RecordStoreConfig::test_instance().data_dir;
+        let result = get_dir(path.as_path());
+    
+        assert!(match result {
+            Err(_) => false,
+            _ => true
+        })
+    }
+    
+    #[test]
+    fn db_access_no_dir() {
+        let path = Path::new("./test-data/non-existent");
+        let result = get_dir(path);
+    
+        assert!(match result {
+            Err(_) => false,
+            _ => true
+        });
+    
+        std::fs::remove_dir(path).unwrap();
+    }
+    
+    #[test]
+    fn getting_dates_from_dir() {
+        let path = RecordStoreConfig::test_instance().data_dir;
+        let dir = get_dir(path.as_path()).unwrap();
+        let dates = get_db_dates(dir);
+    
+        assert_eq!(dates, vec![
+            NaiveDate::from_ymd(2020, 05, 06),
+            NaiveDate::from_ymd(2020, 05, 05)
+        ]);
+    }
+    
+    #[test]
+    fn creating_db() {
+        let path = RecordStoreConfig::test_instance().data_dir;
+        let dir = get_dir(path.as_path()).unwrap();
+        let mut dates = get_db_dates(dir);
+    
+        let current_date = Local::today().naive_local();
+        let db_file_path = get_path_for_new_db(path.as_path(), &current_date);
+    
+        let db = create_db_for_current_date(&mut dates, path.as_path());
+    
+        assert!(match db {
+            Ok(_) => true,
+            Err(err) => {
+                dbg!(err);
+                false
+            }
+        });
+    
+        std::fs::remove_file(&db_file_path).unwrap();
+    }
+    
 }
 
-#[test]
-fn date_from_os_string() {
-    let string = OsStr::new("2020-05-05");
-    let result = date_from_file_name(&string);
-    let expected_date = NaiveDate::from_ymd(2020, 05, 05);
-
-    assert_eq!(result, Ok(expected_date));
-}
-
-#[test]
-fn db_access() {
-    let path = Path::new("./test-data/db_access");
-    let result = get_dir(path);
-
-    assert!(match result {
-        Err(_) => false,
-        _ => true
-    })
-}
-
-#[test]
-fn db_access_no_dir() {
-    let path = Path::new("./test-data/non-existent");
-    let result = get_dir(path);
-
-    assert!(match result {
-        Err(_) => false,
-        _ => true
-    });
-
-    std::fs::remove_dir(path).unwrap();
-}
-
-#[test]
-fn getting_dates_from_dir() {
-    let path = Path::new("./test-data/db_access");
-    let dir = get_dir(path).unwrap();
-    let dates = get_db_dates(dir);
-
-    assert_eq!(dates, vec![
-        NaiveDate::from_ymd(2020, 05, 06),
-        NaiveDate::from_ymd(2020, 05, 05)
-    ]);
-}
-
-#[test]
-fn creating_db() {
-    let path = Path::new("./test-data/db_access");
-    let dir = get_dir(path).unwrap();
-    let mut dates = get_db_dates(dir);
-
-    let current_date = Local::today().naive_local();
-    let db_file_path = get_path_for_new_db(path, &current_date);
-
-    let db = create_db_for_current_date(&mut dates, path);
-
-    assert!(match db {
-        Ok(_) => true,
-        Err(err) => {
-            dbg!(err);
-            false
-        }
-    });
-
-    std::fs::remove_file(&db_file_path).unwrap();
-}

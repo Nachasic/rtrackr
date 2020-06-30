@@ -1,12 +1,16 @@
 mod tracker;
 mod store;
 mod utils;
-mod crutch;
+mod config;
 
 use std::time::{
     SystemTime
 };
 use serde::{ Serialize, Deserialize };
+
+pub use self::{
+    config::*
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivityRecord {
