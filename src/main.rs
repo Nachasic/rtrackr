@@ -4,6 +4,7 @@ mod state;
 mod tui;
 mod event;
 mod window_manager;
+mod record_store;
 
 use std::{ 
     time,
@@ -11,7 +12,7 @@ use std::{
 use window::WindowInfo;
 use state::AppState;
 use event::*;
-use window_manager::{ OSWindowManager, MouseState };
+use window_manager::{ OSWindowManager };
 use xorg::{ XORGWindowManager };
 
 #[macro_use]
@@ -32,11 +33,13 @@ where T: OSWindowManager  {
 
 async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = AppState::new();
+
+    #[cfg(any(target_os = "linux"))]
     let wm = XORGWindowManager::default();
 
     let mut is_running = true;
     let mut cycle_start_time = time::SystemTime::now();
-    let mut time_elapsed = time::Duration::new(0, 0);
+    let mut time_elapsed: time::Duration;
     let sleep_duration = time::Duration::new(1, 0);
 
     let events = Events::with_config(EventConfig::default());

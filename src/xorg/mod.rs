@@ -12,13 +12,6 @@ use atom::*;
 use atoms::*;
 use events::*;
 
-// pub use self::{
-//     // display::*,
-//     // atom::*,
-//     // atoms::*,
-//     // events::*,
-// };
-
 pub struct XORGWindowManager {
     display: Display,
     root_window: u64
