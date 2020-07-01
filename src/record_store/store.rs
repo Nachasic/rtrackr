@@ -124,6 +124,7 @@ impl <'a> RecordStore <'a> {
                 db.write(|db| {
                     db.insert(0, record)
                 })?;
+                db.save()?
             }
         };
         Ok(())
