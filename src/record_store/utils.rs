@@ -219,6 +219,7 @@ mod tests {
         })
     }
     
+    // TODO: make this obsolete with e2e tests
     #[test]
     fn db_access_no_dir() {
         let path = Path::new("./test-data/non-existent");
@@ -244,6 +245,7 @@ mod tests {
         ]);
     }
     
+    // TODO: make this obsolete with e2e tests
     #[test]
     fn creating_db() {
         let path = RecordStoreConfig::test_instance().data_dir;

@@ -153,6 +153,7 @@ mod tests {
         result
     }
 
+    // TODO: make this obsolete with e2e tests
     #[test]
     fn store_creation() {
         let records = create_afk_records(10);
@@ -168,6 +169,7 @@ mod tests {
         remove_today_db_file();
     }
 
+    // TODO: make this obsolete with e2e tests
     #[test]
     fn date_querying() {
         let records = create_afk_records(10);

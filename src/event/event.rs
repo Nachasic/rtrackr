@@ -1,3 +1,11 @@
+/** 
+* Author: Alexander Keliris
+* Date: March 9 2020
+* Title: Spotify-TUI
+* Licence: MIT
+* Type: source code
+* Availability: https://github.com/Rigellute/spotify-tui/blob/c0adca85505a9f67e8eef283eb156e7aea3143d4/src/event/events.rs
+**/
 use crate::event::Key;
 use crossterm::event;
 use std::{sync::mpsc, thread, time::Duration};
