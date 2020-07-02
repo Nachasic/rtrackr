@@ -32,7 +32,7 @@ impl <'a> RecordStore <'a> {
         let db = Self::try_create_file_db(&mut available_date_records, config.data_dir.as_path())?;
 
         Ok(Self{
-            config, available_date_records, db: DB::new(db), current_date
+            config, available_date_records, db: DB::new(db)?, current_date
         })
     }
 
@@ -140,7 +140,7 @@ mod tests {
         std::fs::remove_file(&db_file_path).unwrap();
     }
 
-    fn create_AFK_records(n: usize) -> Vec<ActivityRecord> {
+    fn create_afk_records(n: usize) -> Vec<ActivityRecord> {
         let mut result: Vec<ActivityRecord> = Vec::with_capacity(n);
         let time = std::time::SystemTime::now();
 
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn store_creation() {
-        let records = create_AFK_records(10);
+        let records = create_afk_records(10);
         let config = RecordStoreConfig::test_instance();
         let store = RecordStore::new(&config).unwrap();
 
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn date_querying() {
-        let records = create_AFK_records(10);
+        let records = create_afk_records(10);
         let config = RecordStoreConfig::test_instance();
         let mut store = RecordStore::new(&config).unwrap();
 

@@ -12,12 +12,12 @@ pub struct DB {
 }
 
 impl DB {
-    pub fn new(db: Database) -> Self {
+    pub fn new(db: Database) -> Result<Self, RecordStoreError> {
         let me = Self {
             db: Box::new(db),
         };
-        me.db.load();
-        me
+        me.db.load()?;
+        Ok(me)
     }
 
     pub fn expose(&self) -> &Database {
@@ -34,6 +34,5 @@ impl DB {
         self.db.load()?;
         Ok({})
     }
-
 }
 

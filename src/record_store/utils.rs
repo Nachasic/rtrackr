@@ -142,10 +142,19 @@ pub fn switch_db_to_date(
     date: &NaiveDate,
     dir_path: &Path) -> Result<Database, RecordStoreError> {
         let path = get_path_for_db(dir_path, date);
+        let file_existed = path.as_path().exists();
         let backend = FileBackend::open(path).map_err(|_| RecordStoreError::FailedToSwitchDB)?;
+        let db: Database = db.with_backend(Box::new(backend));
+        
+        if !file_existed {
+            // DB struct tries to load from file upon creation
+            // which causes EOF in case of freshly-created file
+            // To mitigate that - save db immediately when creating a new file
+            db.save()?;
+        }
 
         Ok(
-            db.with_backend(Box::new(backend))
+            db
         )
     }
 
@@ -256,6 +265,5 @@ mod tests {
     
         std::fs::remove_file(&db_file_path).unwrap();
     }
-    
 }
 
