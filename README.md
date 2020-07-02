@@ -2,7 +2,7 @@ rTrackr
 ===
 *Personal productivity tracker*
 
-Allows user to track their activity across open window and browser tabs and classify the time spent as *Productive*, *Leisure* or *Neutral* time.
+Allows user to track their activity across open windows and browser tabs and classify the time spent as *Productive*, *Leisure* or *Neutral* time.
 
 ### Roadmap
 ---
