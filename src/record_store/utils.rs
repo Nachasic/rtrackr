@@ -14,33 +14,48 @@ use chrono::{
     ParseError
 };
 use rustbreak::{ 
-    FileDatabase,
+    MemoryDatabase,
     deser::Bincode,
     RustbreakError,
-    backend::FileBackend,
+    backend::{ FileBackend, Backend, MemoryBackend },
+    Database as RDatabase
 };
 
 use super::{ ActivityRecord };
 
-#[derive(Debug, Copy, Clone)]
-pub enum EitherOr <T, G> {
-    Either(T),
-    Or(G),
+pub type Database = RDatabase<Vec<ActivityRecord>, Box<dyn Backend>, Bincode>;
+
+#[derive(Debug)]
+pub enum RecordStoreError {
+    FailedToSwitchDB,
+    DBFailed(RustbreakError)
 }
 
-impl <T, G> EitherOr <T, G> {
-    pub fn as_ref(&self) -> EitherOr<&T, &G> {
+impl std::fmt::Display for RecordStoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EitherOr::Either(ref val) => EitherOr::Either(val),
-            EitherOr::Or(ref val) => EitherOr::Or(val),
+            RecordStoreError::FailedToSwitchDB => write!(f, "Failed to switch database to a new file"),
+            RecordStoreError::DBFailed(err) => std::fmt::Display::fmt(err, f),
+        }
+    }
+}
+
+impl std::error::Error for RecordStoreError {
+    fn description(&self) -> &str {
+        match self {
+            RecordStoreError::FailedToSwitchDB => "Failed to switch database to a new file",
+            RecordStoreError::DBFailed(_) => "Internal DB error"
         }
     }
 
-    pub fn as_ref_mut(&mut self) -> EitherOr<&mut T, &mut G> {
-        match self {
-            EitherOr::Either(ref mut val) => EitherOr::Either(val),
-            EitherOr::Or(ref mut val) => EitherOr::Or(val),
-        }
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        None
+    }
+}
+
+impl From<RustbreakError> for RecordStoreError {
+    fn from(err: RustbreakError) -> Self {
+        RecordStoreError::DBFailed(err)
     }
 }
 
@@ -97,47 +112,50 @@ pub fn get_db_dates(dir: ReadDir) -> Vec<NaiveDate> {
     dates
 }
 
-fn get_path_for_db(dir_path: &Path, date: &NaiveDate) -> PathBuf {
+pub fn get_path_for_db(dir_path: &Path, date: &NaiveDate) -> PathBuf {
     let date_str = date.format("%Y-%m-%d").to_string();
     let file_path = format!("{}.db", date_str);
 
     dir_path.join(file_path)
 }
 
-pub fn soft_insert_current_date(dates: &mut Vec<NaiveDate>) {
-    let current_date = Local::today().naive_local();
-
+pub fn soft_insert_date(dates: &mut Vec<NaiveDate>, date: NaiveDate) {
     if dates.len() > 0 {
         let most_recent = dates[0];
-        if most_recent != current_date {
-            dates.insert(0, current_date);
+        if most_recent != date {
+            dates.insert(0, date);
         }
     } else {
-        dates.push(current_date);
+        dates.push(date);
     }
     
 }
 
+pub fn create_memory_db () -> Result<Database, RustbreakError> {
+    let db = MemoryDatabase::<Vec<ActivityRecord>, Bincode>::memory(vec![])?;
+
+    Ok(db.with_backend(Box::new(MemoryBackend::default())))
+}
+
 pub fn switch_db_to_date(
-    db: FileDatabase<Vec<ActivityRecord>, Bincode>,
+    db: Database,
     date: &NaiveDate,
-    dir_path: &Path) -> Result<FileDatabase<Vec<ActivityRecord>, Bincode>, std::io::Error> {
+    dir_path: &Path) -> Result<Database, RecordStoreError> {
         let path = get_path_for_db(dir_path, date);
-        let file = std::fs::File::open(path)?;
+        let backend = FileBackend::open(path).map_err(|_| RecordStoreError::FailedToSwitchDB)?;
 
         Ok(
-            db.with_backend(FileBackend::from_file(file))
+            db.with_backend(Box::new(backend))
         )
     }
 
 pub fn create_file_db_for_current_date(dates: &mut Vec<NaiveDate>, dir_path: &Path)
-    -> Result<FileDatabase<Vec<ActivityRecord>, Bincode>, RustbreakError> {
-    soft_insert_current_date(dates);
-    let current_date = dates[0];
-
-    let db_path = get_path_for_db(dir_path, &current_date);
-
-    FileDatabase::<Vec<ActivityRecord>, Bincode>::from_path(db_path, vec![])
+    -> Result<Database, RecordStoreError> {
+    let current_date = Local::today().naive_local();
+    let memory_db = create_memory_db()?;
+    
+    soft_insert_date(dates, current_date);
+    switch_db_to_date(memory_db, &current_date, dir_path)
 }
 
 #[cfg(test)]
@@ -148,10 +166,11 @@ mod tests {
     };
 
     #[test]
-    fn soft_push_to_empty_date_vec() {
+    fn soft_insert_to_empty_date_vec() {
         let mut dates: Vec<NaiveDate> = vec![];
+        let current_date = Local::today().naive_local();
     
-        soft_insert_current_date(&mut dates);
+        soft_insert_date(&mut dates, current_date);
         assert_eq!(dates.len(), 1);
     }
 
@@ -162,7 +181,7 @@ mod tests {
             NaiveDate::from_ymd(2020, 05, 06),
             NaiveDate::from_ymd(2020, 05, 05)
         ];
-        soft_insert_current_date(&mut dates);
+        soft_insert_date(&mut dates, current_date);
 
         assert_eq!(dates, vec![
             current_date,

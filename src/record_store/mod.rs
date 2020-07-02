@@ -2,6 +2,7 @@ mod tracker;
 mod store;
 mod utils;
 mod config;
+mod db;
 
 use std::time::{
     SystemTime
