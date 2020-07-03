@@ -846,6 +846,7 @@ dependencies = [
  "lazy_static",
  "rustbreak",
  "serde",
+ "serde_derive",
  "tokio",
  "tui",
  "x11",

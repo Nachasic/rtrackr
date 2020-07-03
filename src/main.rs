@@ -15,10 +15,8 @@ use event::*;
 use window_manager::{ OSWindowManager };
 use xorg::{ XORGWindowManager };
 
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate serde;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate serde_derive;
 
 fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
