@@ -1,20 +1,20 @@
-mod display;
 mod atom;
 mod atoms;
+mod display;
 mod events;
 
 use crate::{
+    window_manager::{MouseState, OSWindowManager},
     WindowInfo,
-    window_manager::{ OSWindowManager, MouseState }
 };
-use display::Display;
 use atom::*;
 use atoms::*;
+use display::Display;
 use events::*;
 
 pub struct XORGWindowManager {
     display: Display,
-    root_window: u64
+    root_window: u64,
 }
 
 impl Default for XORGWindowManager {
@@ -22,7 +22,8 @@ impl Default for XORGWindowManager {
         let display = Display::open().unwrap();
         let root_window = display.get_default_root_window();
         Self {
-            display, root_window
+            display,
+            root_window,
         }
     }
 }

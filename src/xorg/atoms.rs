@@ -1,20 +1,7 @@
+use super::{atom::*, display::*};
+use std::{ffi::CStr, marker::PhantomData, ptr::null_mut};
 use x11::xlib::{
-    Window,
-    Atom as XAtom,
-    XA_WINDOW,
-    XTextProperty,
-    XClassHint,
-    XGetWMName,
-    XGetClassHint,
-};
-use std::{
-    ptr::null_mut,
-    ffi::{ CStr },
-    marker::PhantomData,
-};
-use super::{
-    display::*,
-    atom::*
+    Atom as XAtom, Window, XClassHint, XGetClassHint, XGetWMName, XTextProperty, XA_WINDOW,
 };
 
 /// Atom that corresponds with current active window under
@@ -23,15 +10,15 @@ use super::{
 pub struct XNetActiveWindow<'a> {
     phantom: PhantomData<&'a str>,
 }
-impl <'a> RawAtom <'a> for XNetActiveWindow <'a> {
+impl<'a> RawAtom<'a> for XNetActiveWindow<'a> {
     fn get_name() -> &'a str {
-        return "_NET_ACTIVE_WINDOW"
+        return "_NET_ACTIVE_WINDOW";
     }
     fn get_expected_property_type() -> XAtom {
         XA_WINDOW
     }
 }
-impl <'a> Atom for XNetActiveWindow <'a> {
+impl<'a> Atom for XNetActiveWindow<'a> {
     type PropertyType = Window;
     type ErrorType = XAtomError<'a>;
 
@@ -47,7 +34,10 @@ impl <'a> Atom for XNetActiveWindow <'a> {
     /// let root_window = Window::default_root_window(&display);
     /// let active_window = XNetActiveWindow.get_as_property(&display, &root_window)?;
     /// ```
-    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(
+        display: &Display,
+        window: Window,
+    ) -> Result<Self::PropertyType, Self::ErrorType> {
         let raw_window = Self::get_as_raw_property(display, window)? as Window;
         Ok(raw_window)
     }
@@ -57,26 +47,23 @@ impl <'a> Atom for XNetActiveWindow <'a> {
 /// On a given display
 #[derive(Debug, Copy, Clone)]
 pub struct XWMName<'a> {
-    phantom: PhantomData<&'a str>
+    phantom: PhantomData<&'a str>,
 }
-impl <'a> Atom for XWMName<'a> {
+impl<'a> Atom for XWMName<'a> {
     type PropertyType = String;
     type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(
+        display: &Display,
+        window: Window,
+    ) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut text_property = XTextProperty {
             value: null_mut(),
             encoding: 0,
             format: 0,
             nitems: 0,
         };
-        unsafe { 
-            XGetWMName(
-                display.0,
-                window,
-                &mut text_property,
-            )
-        };
+        unsafe { XGetWMName(display.0, window, &mut text_property) };
         if !text_property.value.is_null() {
             let text = unsafe { CStr::from_ptr(text_property.value as *mut i8) };
 
@@ -91,25 +78,22 @@ impl <'a> Atom for XWMName<'a> {
 /// on a given display
 #[derive(Debug, Copy, Clone)]
 pub struct XWMClass<'a> {
-    phantom: PhantomData<&'a str>
+    phantom: PhantomData<&'a str>,
 }
-impl <'a> Atom for XWMClass<'a> {
+impl<'a> Atom for XWMClass<'a> {
     type PropertyType = (String, String);
     type ErrorType = XAtomError<'a>;
 
-    fn get_as_property(display: &Display, window: Window) -> Result<Self::PropertyType, Self::ErrorType> {
+    fn get_as_property(
+        display: &Display,
+        window: Window,
+    ) -> Result<Self::PropertyType, Self::ErrorType> {
         let mut class_hint = XClassHint {
             res_class: null_mut(),
             res_name: null_mut(),
         };
 
-        unsafe {
-            XGetClassHint(
-                display.0,
-                window,
-                &mut class_hint
-            )
-        };
+        unsafe { XGetClassHint(display.0, window, &mut class_hint) };
 
         if !class_hint.res_name.is_null() && !class_hint.res_class.is_null() {
             let name_text = unsafe { CStr::from_ptr(class_hint.res_name as *mut i8) };
@@ -117,7 +101,7 @@ impl <'a> Atom for XWMClass<'a> {
 
             Ok((
                 String::from(name_text.to_str()?),
-                String::from(class_text.to_str()?)
+                String::from(class_text.to_str()?),
             ))
         } else {
             Err(XAtomError::NoProperty("WM_CLASS"))

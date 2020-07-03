@@ -1,15 +1,11 @@
 use super::style as STYLE;
-use std::{
-    borrow::Cow,
-};
-use tui::{
-    widgets::{ Text },
-};
-use crate::{
-    WindowInfo
-};
+use crate::WindowInfo;
+use std::borrow::Cow;
+use tui::widgets::Text;
 
-pub fn cow(str: &str) -> Cow<'_, str> { Cow::Borrowed(str) }
+pub fn cow(str: &str) -> Cow<'_, str> {
+    Cow::Borrowed(str)
+}
 
 #[derive(Default, Debug, Clone)]
 pub struct TUIWindowInfo {
@@ -23,7 +19,9 @@ impl From<&WindowInfo> for TUIWindowInfo {
     fn from(info: &WindowInfo) -> Self {
         let [title, app_name, app_class] = info.get_strings();
         Self {
-            title, app_class, app_name
+            title,
+            app_class,
+            app_name,
         }
     }
 }
@@ -31,11 +29,12 @@ impl From<&WindowInfo> for TUIWindowInfo {
 impl TUIWindowInfo {
     pub fn to_widgets(&self) -> [Text; 8] {
         let default_string = String::default();
-        if self.app_name == default_string ||
-            self.title == default_string ||
-            self.app_class == default_string {
-                return self.to_widgets_none()
-            };
+        if self.app_name == default_string
+            || self.title == default_string
+            || self.app_class == default_string
+        {
+            return self.to_widgets_none();
+        };
 
         [
             Text::Styled(cow("Active window:"), *STYLE::STYLE_TEXT_HEADER),

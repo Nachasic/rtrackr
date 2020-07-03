@@ -1,8 +1,5 @@
-use std::time::{
-    SystemTime
-};
 use super::*;
-
+use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct RecordTracker {
@@ -14,7 +11,7 @@ impl RecordTracker {
     pub fn new() -> Self {
         Self {
             current_archetype: None,
-            time_of_first_submission: SystemTime::now()
+            time_of_first_submission: SystemTime::now(),
         }
     }
 
@@ -30,15 +27,15 @@ impl RecordTracker {
 
                     self.current_archetype = Some(arch);
                     self.time_of_first_submission = SystemTime::now();
-                    return Some(record)
+                    return Some(record);
                 } else {
-                    return None
+                    return None;
                 }
-            },
+            }
             None => {
                 self.current_archetype = Some(arch);
                 self.time_of_first_submission = SystemTime::now();
-                return None
+                return None;
             }
         }
     }
@@ -48,7 +45,7 @@ impl RecordTracker {
 
         ActivityRecord {
             archetype,
-            time_range: (start_time, end_time)
+            time_range: (start_time, end_time),
         }
     }
 }
@@ -59,12 +56,13 @@ fn report_production() {
     let arch = Archetype::ActiveWindow(
         String::from("title"),
         String::from("my_app"),
-        String::from("basic app"));
+        String::from("basic app"),
+    );
 
     let report = tracker.ping(arch);
 
     assert!(match report {
         None => true,
-        _ => false
+        _ => false,
     })
 }

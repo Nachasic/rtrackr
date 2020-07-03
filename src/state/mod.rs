@@ -1,9 +1,6 @@
 mod ui;
+use crate::{window_manager::MouseState, WindowInfo};
 use std::time;
-use crate::{
-    WindowInfo,
-    window_manager::MouseState
-};
 use ui::*;
 
 pub struct AppState {
@@ -18,7 +15,7 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        Self{
+        Self {
             active_window_info: None,
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
@@ -29,7 +26,7 @@ impl AppState {
     pub fn updated_window_info(&mut self, info: &WindowInfo) {
         if match self.active_window_info {
             Some(ref current_info) => current_info != info,
-            None => true
+            None => true,
         } {
             self.timer_reset();
             self.active_window_info = Some(info.clone());
@@ -54,9 +51,9 @@ impl AppState {
     }
 
     pub fn get_afk_seconds(&self) -> u64 {
-        time::SystemTime::now().duration_since(
-            self.last_moment_active
-        ).unwrap_or(time::Duration::new(0, 0))
+        time::SystemTime::now()
+            .duration_since(self.last_moment_active)
+            .unwrap_or(time::Duration::new(0, 0))
             .as_secs()
     }
 

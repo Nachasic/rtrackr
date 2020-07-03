@@ -1,11 +1,8 @@
-
-use x11::xlib::*;
 use std::slice;
+use x11::xlib::*;
 
-use super::display::{ Display };
-use crate::{
-    window_manager::MouseState
-};
+use super::display::Display;
+use crate::window_manager::MouseState;
 
 pub fn query_mouse_pointer(display: &Display, root_window: Window) -> MouseState {
     let mut root_x = 0;
@@ -55,9 +52,7 @@ pub fn query_keyboard(display: &Display) -> Vec<u8> {
     unsafe {
         let keymap: *mut i8 = [0; 32].as_mut_ptr();
         XQueryKeymap(display.0, keymap);
-        for (ix, byte) in
-            slice::from_raw_parts(keymap, 32).iter().enumerate()
-        {
+        for (ix, byte) in slice::from_raw_parts(keymap, 32).iter().enumerate() {
             for bit in 0_u8..8_u8 {
                 let bitmask = 1 << bit;
                 if byte & bitmask != 0 {

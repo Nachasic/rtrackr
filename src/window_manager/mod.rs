@@ -1,10 +1,8 @@
-use crate::{
-    WindowInfo,
-};
+use crate::WindowInfo;
 
 pub struct MouseState {
     pub coords: (i32, i32),
-    pub button_pressed: Vec<bool>
+    pub button_pressed: Vec<bool>,
 }
 
 pub trait OSWindowManager {

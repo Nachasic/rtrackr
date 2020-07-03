@@ -1,21 +1,15 @@
-use std::{
-    path::{ Path, PathBuf },
-    fs::{
-        read_dir,
-        create_dir,
-        ReadDir
-    },
-    collections::HashMap,
-};
-use chrono::NaiveDate;
-use rustbreak::{ 
-    MemoryDatabase,
-    deser::Bincode,
-    RustbreakError,
-    backend::{ FileBackend, Backend, MemoryBackend },
-    Database as RDatabase
-};
 use super::*;
+use chrono::NaiveDate;
+use rustbreak::{
+    backend::{Backend, FileBackend, MemoryBackend},
+    deser::Bincode,
+    Database as RDatabase, MemoryDatabase, RustbreakError,
+};
+use std::{
+    collections::HashMap,
+    fs::{create_dir, read_dir, ReadDir},
+    path::{Path, PathBuf},
+};
 
 pub type Database = RDatabase<HashMap<String, Vec<ActivityRecord>>, Box<dyn Backend>, Bincode>;
 
@@ -29,9 +23,13 @@ pub enum RecordStoreError {
 impl std::fmt::Display for RecordStoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RecordStoreError::FailedToSwitchDB => write!(f, "Failed to switch database to a new file"),
+            RecordStoreError::FailedToSwitchDB => {
+                write!(f, "Failed to switch database to a new file")
+            }
             RecordStoreError::DBFailed(err) => std::fmt::Display::fmt(err, f),
-            RecordStoreError::NoDataOnDate(date) => write!(f, "Given date is not registered in the database {}", date),
+            RecordStoreError::NoDataOnDate(date) => {
+                write!(f, "Given date is not registered in the database {}", date)
+            }
         }
     }
 }
@@ -73,35 +71,31 @@ pub fn get_path_for_db(dir_path: &Path) -> PathBuf {
     dir_path.join(String::from("records.db"))
 }
 
-pub fn create_memory_db () -> Result<Database, RustbreakError> {
-    let db = MemoryDatabase::<HashMap<String, Vec<ActivityRecord>>, Bincode>::memory(HashMap::new())?;
+pub fn create_memory_db() -> Result<Database, RustbreakError> {
+    let db =
+        MemoryDatabase::<HashMap<String, Vec<ActivityRecord>>, Bincode>::memory(HashMap::new())?;
 
     Ok(db.with_backend(Box::new(MemoryBackend::default())))
 }
 
-pub fn switch_db(
-    db: Database,
-    dir_path: &Path) -> Result<Database, RecordStoreError> {
-        let path = get_path_for_db(dir_path);
-        let file_existed = path.as_path().exists();
-        let backend = FileBackend::open(path).map_err(|_| RecordStoreError::FailedToSwitchDB)?;
-        let db: Database = db.with_backend(Box::new(backend));
-        
-        if !file_existed {
-            // DB struct tries to load from file upon creation
-            // which causes EOF in case of freshly-created file
-            // To mitigate that - save db immediately when creating a new file
-            db.save()?;
-        }
+pub fn switch_db(db: Database, dir_path: &Path) -> Result<Database, RecordStoreError> {
+    let path = get_path_for_db(dir_path);
+    let file_existed = path.as_path().exists();
+    let backend = FileBackend::open(path).map_err(|_| RecordStoreError::FailedToSwitchDB)?;
+    let db: Database = db.with_backend(Box::new(backend));
 
-        Ok(
-            db
-        )
+    if !file_existed {
+        // DB struct tries to load from file upon creation
+        // which causes EOF in case of freshly-created file
+        // To mitigate that - save db immediately when creating a new file
+        db.save()?;
     }
 
-pub fn create_file_db(dir_path: &Path)
-    -> Result<Database, RecordStoreError> {
+    Ok(db)
+}
+
+pub fn create_file_db(dir_path: &Path) -> Result<Database, RecordStoreError> {
     let memory_db = create_memory_db()?;
-    
+
     switch_db(memory_db, dir_path)
 }

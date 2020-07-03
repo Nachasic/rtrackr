@@ -1,35 +1,36 @@
-mod xorg;
-mod window;
+mod event;
+mod record_store;
 mod state;
 mod tui;
-mod event;
+mod window;
 mod window_manager;
-mod record_store;
+mod xorg;
 
-use std::{ 
-    time,
-};
-use window::WindowInfo;
-use state::AppState;
 use event::*;
-use window_manager::{ OSWindowManager };
-use xorg::{ XORGWindowManager };
+use state::AppState;
+use std::time;
+use window::WindowInfo;
+use window_manager::OSWindowManager;
+use xorg::XORGWindowManager;
 
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate serde_derive;
 
 fn clear_screen() {
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
 
 fn update_window_info<T>(wm: &T, state: &mut AppState) -> Result<(), Box<dyn std::error::Error>>
-where T: OSWindowManager  {
+where
+    T: OSWindowManager,
+{
     let active_window = wm.get_window_info()?;
 
     state.updated_window_info(&active_window);
     Ok({})
 }
-
 
 async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = AppState::new();
@@ -52,11 +53,10 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
         let mouse = wm.query_mouse_pointer();
         let current_time = time::SystemTime::now();
 
-        time_elapsed = 
-                current_time.duration_since(cycle_start_time).unwrap_or(
-                    time::Duration::new(0, 0)
-                );
-        
+        time_elapsed = current_time
+            .duration_since(cycle_start_time)
+            .unwrap_or(time::Duration::new(0, 0));
+
         state.updated_keys(keys);
         state.updated_mouse_info(&mouse);
 
@@ -67,15 +67,14 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
 
         if let Ok(event) = events.next() {
             match event {
-                Event::Input(key) =>
-                    match key {
-                        Key::Ctrl('c') => is_running = false,
-                        _ => {}
-                    }
+                Event::Input(key) => match key {
+                    Key::Ctrl('c') => is_running = false,
+                    _ => {}
+                },
                 Event::Tick => tui.draw(&mut state)?,
             }
         }
-    };
+    }
     Ok({})
 }
 

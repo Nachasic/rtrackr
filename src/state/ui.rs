@@ -6,13 +6,13 @@ pub enum Routes {
 
 // TODO: Change the router so it works like a stack
 pub struct Router {
-    pub active_routes: Vec<Routes>
+    pub active_routes: Vec<Routes>,
 }
 
 impl Default for Router {
     fn default() -> Self {
         Self {
-            active_routes: vec![Routes::Main]
+            active_routes: vec![Routes::Main],
         }
     }
 }
