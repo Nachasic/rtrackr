@@ -17,29 +17,63 @@ pub enum Filter {
 }
 
 pub enum RuleInternal {
-    ForName(String, Vec<Filter>),
-    ForClass(String, Vec<Filter>),
-    ForTitle(String, Vec<Filter>)
+    ForName(Vec<String>, Vec<Filter>),
+    ForClass(Vec<String>, Vec<Filter>),
+    ForTitle(Vec<String>, Vec<Filter>)
+}
+
+impl From<RawRule> for Option<RuleInternal> {
+    fn from(raw: RawRule) -> Option<RuleInternal> {
+        let mut filters: Vec<Filter> = vec![];
+
+        raw.title_contains_all.map(|vars| {
+            filters.push(Filter::TitleContainsAll(vars))
+        });
+        raw.title_contains_any.map(|vars| {
+            filters.push(Filter::TitleContainsAny(vars))
+        });
+        raw.title_is.map(|val| {
+            filters.push(Filter::TitleIs(val))
+        });
+        raw.title_starts_with.map(|val| {
+            filters.push(Filter::TitleStartsWith(val))
+        });
+        raw.title_ends_with.map(|val| {
+            filters.push(Filter::TitleEndsWith(val))
+        });
+
+        match raw.for_class {
+            Some(classes) => Some(RuleInternal::ForClass(classes, filters)),
+            _ => match raw.for_name {
+                Some(names) => Some(RuleInternal::ForName(names, filters)),
+                _ => match raw.for_title {
+                    Some(titles) => Some(RuleInternal::ForTitle(titles, filters)),
+                    _ => None
+                }
+            }
+        }
+    }
 }
 
 impl RuleInternal {
     pub fn apply(&self, r_name: &String, r_class: &String, r_title: &String) -> bool {
         match self {
-            RuleInternal::ForClass(class, filters) => 
-                if class == r_class {
+            RuleInternal::ForClass(classes, filters) => 
+                if classes.contains(r_class) {
                     Self::check_title(r_title, filters)
                 } else {
                     false
                 }
-            RuleInternal::ForName(name, filters) => 
-                if name == r_name {
+            RuleInternal::ForName(names, filters) => 
+                if names.contains(r_name) {
                     Self::check_title(r_title, filters)
                 } else {
                     false
                 },
-            RuleInternal::ForTitle(title, filters) => 
-                if title == r_title {
-                    Self::check_title(r_title, filters)
+            RuleInternal::ForTitle(titles, _) => 
+                if titles.contains(r_title) {
+                    // Self::check_title(r_title, filters)
+                    true
                 } else {
                     false
                 }
@@ -122,7 +156,7 @@ mod tests {
 
     #[test]
     fn class_test() {
-        let rule = RuleInternal::ForClass(String::from("test-class"), vec![
+        let rule = RuleInternal::ForClass(vec![String::from("test-class")], vec![
             Filter::TitleContainsAll(vec![String::from("foo"), String::from("bar")]),
             Filter::TitleContainsAny(vec![String::from("baz")]),
             Filter::TitleEndsWith(String::from("end")),
@@ -132,9 +166,21 @@ mod tests {
         let res1 = rule.apply(&String::from("r_name"), &String::from("no"), &String::from("no"));
         let res2 = rule.apply(&String::from("r_name"), &String::from("test-class"), &String::from("foo bar"));
         let res3 = rule.apply(&String::from("r_name"), &String::from("test-class"), &String::from("lolipop baz lightyear"));
+        let res4 = rule.apply(&String::from("r_name"), &String::from("test-class"), &String::from("start BRRRAP"));
+        let res5 = rule.apply(&String::from("r_name"), &String::from("test-class"), &String::from("BRRRAP end"));
 
         assert_eq!(res1, false);
         assert_eq!(res2, true);
         assert_eq!(res3, true);
+        assert_eq!(res4, true);
+        assert_eq!(res5, true);
+    }
+
+    #[test]
+    fn for_title_test() {
+        let rule = RuleInternal::ForTitle(vec![String::from("Title in question")], vec![]);
+        let res = rule.apply(&String::from("r_name"), &String::from("test-class"), &String::from("Title in question"));
+
+        assert_eq!(res, true);
     }
 }
