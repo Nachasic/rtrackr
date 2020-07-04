@@ -45,6 +45,7 @@ impl RecordTracker {
 
         ActivityRecord {
             archetype,
+            is_productive: None,
             time_range: (start_time, end_time),
         }
     }

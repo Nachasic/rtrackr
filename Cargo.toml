@@ -16,5 +16,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1"
 crossterm = "0.17.5"
 lazy_static = "1.4.0"
-chrono = "0.4.11"
+chrono = "0.4.12"
 directories = "3.0.0"
+toml = "0.5.6"
