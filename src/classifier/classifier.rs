@@ -1,5 +1,6 @@
 use super::{
     config::Machine,
+    rules::RuleInternal,
     super::record_store::{
         ActivityRecord,
         Archetype
