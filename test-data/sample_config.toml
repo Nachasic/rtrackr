@@ -1,0 +1,25 @@
+[machine]
+name = "Home computer"
+
+[[activity]]
+    name = "coding"
+
+    # 1 = Productive, -1 = Leisure, 0 = Neutral
+    productivity = 1
+
+    [[activity.rule]]
+        for_class = ["code-oss"]
+        title_conains_any = ["rtrackr", "frontend"]
+
+    [[activity.rule]]
+        # Grabbing by app name
+        for_name = ["Navigator", "Google-Chrome"]
+
+        # Providing multiple criteria is equivalent to "OR" operation
+        title_contains_any = ["rtrackr"]
+        # title_contains_all = ["github"]
+        # title_is = ""
+        # title_ends_with = ""
+        # title_starts_with = ""
+
+

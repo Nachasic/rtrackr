@@ -5,6 +5,7 @@ mod tui;
 mod window;
 mod window_manager;
 mod xorg;
+mod classifier;
 
 use event::*;
 use state::AppState;

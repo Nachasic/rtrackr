@@ -1,3 +1,4 @@
+/// TODO: Find out about "Bad Window" response when blocking the screen wihile tracking is enabled
 mod atom;
 mod atoms;
 mod display;
