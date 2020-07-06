@@ -1,3 +1,5 @@
+use crate::record_store::Archetype;
+
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
     pub uid: u64,
@@ -82,3 +84,12 @@ impl PartialEq for WindowInfo {
     }
 }
 impl Eq for WindowInfo {}
+
+
+impl From<WindowInfo> for Option<Archetype> {
+    fn from(info: WindowInfo) -> Self {
+        Some(
+            Archetype::ActiveWindow(info.title?, info.app_name?, info.app_class?)
+        )
+    }
+}

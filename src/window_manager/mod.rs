@@ -1,4 +1,6 @@
-use crate::WindowInfo;
+use crate::{ 
+    record_store::{ Archetype }
+};
 
 pub struct MouseState {
     pub coords: (i32, i32),
@@ -8,7 +10,7 @@ pub struct MouseState {
 pub trait OSWindowManager {
     type KeyboardState;
 
-    fn get_window_info(&self) -> Result<WindowInfo, Box<dyn std::error::Error>>;
+    fn get_window_archetype(&self) -> Option<Archetype>;
     fn query_mouse_pointer(&self) -> MouseState;
     fn query_keyboard(&self) -> Self::KeyboardState;
 }

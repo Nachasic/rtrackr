@@ -1,11 +1,18 @@
 mod ui;
-use crate::{window_manager::MouseState, WindowInfo};
+use crate::{
+    window_manager::MouseState,
+    record_store::{
+        Archetype,
+        RecordTracker,
+        RecordStore
+    }
+};
 use std::time;
 use ui::*;
 
 pub struct AppState {
     // Tracking information
-    pub active_window_info: Option<WindowInfo>,
+    pub active_window_info: Option<Archetype>,
     last_moment_active: time::SystemTime,
     last_mouse_position: (i32, i32),
 
@@ -23,13 +30,16 @@ impl AppState {
         }
     }
 
-    pub fn updated_window_info(&mut self, info: &WindowInfo) {
-        if match self.active_window_info {
-            Some(ref current_info) => current_info != info,
-            None => true,
+    pub fn updated_window_info(&mut self, info: Option<Archetype>) {
+        let current_info = &self.active_window_info;
+        
+        if match (current_info, &info) {
+            (Some(current_arch), Some(in_arch)) => current_arch != in_arch,
+            (None, None) => false,
+            _ => true
         } {
             self.timer_reset();
-            self.active_window_info = Some(info.clone());
+            self.active_window_info = info;
         }
     }
 
