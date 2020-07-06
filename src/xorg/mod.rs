@@ -6,7 +6,7 @@ mod events;
 
 use crate::{
     window_manager::{MouseState, OSWindowManager},
-    WindowInfo,
+    record_store::Archetype,
 };
 use atom::*;
 use atoms::*;
@@ -29,18 +29,24 @@ impl Default for XORGWindowManager {
     }
 }
 
-impl OSWindowManager for XORGWindowManager {
-    type KeyboardState = Vec<u8>;
-
-    fn get_window_info(&self) -> Result<WindowInfo, Box<dyn std::error::Error>> {
+impl XORGWindowManager {
+    pub fn get_window_archetype(&self) -> Result<Archetype, Box<dyn std::error::Error>> {
         let active_window_uid = XNetActiveWindow::get_as_property(&self.display, self.root_window)?;
         let title = XWMName::get_as_property(&self.display, active_window_uid)?;
         let (app_name, app_class) = XWMClass::get_as_property(&self.display, active_window_uid)?;
 
-        Ok(WindowInfo::build(active_window_uid)
-            .with_title(title)
-            .with_app_name(app_name)
-            .with_app_class(app_class))
+        Ok(Archetype::ActiveWindow(title, app_name, app_class))
+    }
+}
+
+impl OSWindowManager for XORGWindowManager {
+    type KeyboardState = Vec<u8>;
+
+    fn get_window_archetype(&self) -> Option<Archetype> {
+        match self.get_window_archetype() {
+            Ok(arch) => Some(arch),
+            Err(_) => None
+        }
     }
 
     fn query_keyboard(&self) -> Self::KeyboardState {

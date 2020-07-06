@@ -10,7 +10,6 @@ mod classifier;
 use event::*;
 use state::AppState;
 use std::time;
-use window::WindowInfo;
 use window_manager::OSWindowManager;
 use xorg::XORGWindowManager;
 
@@ -27,9 +26,9 @@ fn update_window_info<T>(wm: &T, state: &mut AppState) -> Result<(), Box<dyn std
 where
     T: OSWindowManager,
 {
-    let active_window = wm.get_window_info()?;
+    let active_window = wm.get_window_archetype();
 
-    state.updated_window_info(&active_window);
+    state.updated_window_info(active_window);
     Ok({})
 }
 
