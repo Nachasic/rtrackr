@@ -14,8 +14,8 @@ In order of priority from highest to lowest.
 
 - [x] Support for Linux (xorg)
 - [x] Persistent record store on file system
+- [x] Express rules of classifying activities as productive, neutral or leisure via TOML configuration;
 - [ ] TUI
-- [ ] Express time classification via TOML conf (release)
 - [ ] Projects
 - [ ] Support for Windows
 - [ ] Support for OSX
