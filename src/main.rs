@@ -18,22 +18,18 @@ extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 
-fn clear_screen() {
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-}
-
 fn update_window_info<T>(wm: &T, state: &mut AppState) -> Result<(), Box<dyn std::error::Error>>
 where
     T: OSWindowManager,
 {
     let active_window = wm.get_window_archetype();
 
-    state.update_window_info(active_window);
+    state.update_window_info(active_window)?;
     Ok({})
 }
 
 async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
-    let mut state = AppState::new();
+    let mut state = AppState::new()?;
 
     #[cfg(any(target_os = "linux"))]
     let wm = XORGWindowManager::default();
@@ -44,9 +40,9 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let sleep_duration = time::Duration::new(1, 0);
 
     let events = Events::with_config(EventConfig::default());
-
-    clear_screen();
     let mut tui = tui::Tui::new()?;
+
+    tui.clear()?;
 
     while is_running {
         let keys = wm.query_keyboard();
@@ -85,5 +81,4 @@ async fn main() {
         Ok(_) => {}
     };
     println!("Done, goodbye!");
-    clear_screen();
 }

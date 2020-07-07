@@ -7,13 +7,13 @@ use super::{
 use chrono::{Local, NaiveDate};
 use std::path::Path;
 
-pub struct RecordStore<'a> {
-    config: &'a RecordStoreConfig,
+pub struct RecordStore {
+    config: RecordStoreConfig,
     db: DB,
 }
 
-impl<'a> RecordStore<'a> {
-    pub fn new(config: &'a RecordStoreConfig) -> Result<Self, RecordStoreError> {
+impl RecordStore {
+    pub fn new(config: RecordStoreConfig) -> Result<Self, RecordStoreError> {
         let db = Self::try_create_file_db(config.data_dir.as_path())?;
 
         Ok(Self {

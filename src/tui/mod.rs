@@ -26,6 +26,11 @@ impl Tui {
         })
     }
 
+    pub fn clear(&mut self) -> io::Result<()> {
+        self.terminal.hide_cursor()?;
+        self.terminal.clear()
+    }
+
     pub fn draw(&mut self, state: &mut AppState) -> io::Result<()> {
         let tui_window_info = TUIWindowInfo {
             archetype: &state.get_current_archetype()
@@ -39,20 +44,20 @@ impl Tui {
                 .split(f.size());
 
             let window_info_text = tui_window_info.to_widgets();
-            let afk_text = [Text::Styled(cow("AFK"), *STYLE::STYLE_TEXT_WARNING)];
+            // let afk_text = [Text::Styled(cow("AFK"), *STYLE::STYLE_TEXT_WARNING)];
             let block = Block::default()
                 .title("Active window info")
                 .borders(Borders::ALL);
             let window_notification = Paragraph::new(window_info_text.iter())
                 .block(block.clone())
                 .alignment(Alignment::Left);
-            let afk_notification = Paragraph::new(afk_text.iter()).block(block.clone());
+            // let afk_notification = Paragraph::new(afk_text.iter()).block(block.clone());
 
-            if state.get_afk_seconds() > 10 {
-                f.render_widget(afk_notification, chunks[0]);
-            } else {
-                f.render_widget(window_notification, chunks[0]);
-            }
+            // if state.get_afk_seconds() > 10 {
+            //     f.render_widget(afk_notification, chunks[0]);
+            // } else {
+            f.render_widget(window_notification, chunks[0]);
+            // }
 
             let block = Block::default().title("Block 2").borders(Borders::ALL);
             f.render_widget(block, chunks[1]);

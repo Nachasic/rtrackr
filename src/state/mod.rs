@@ -3,9 +3,9 @@ use crate::{
     window_manager::MouseState,
     record_store::{
         Archetype,
-        ActivityRecord,
         RecordTracker,
-        RecordStore
+        RecordStore,
+        RecordStoreConfig
     },
     classifier::{
         Classifier, ClassifierConfig
@@ -20,8 +20,8 @@ pub struct AppState {
     last_mouse_position: (i32, i32),
     last_active_window: Option<Archetype>,
     
-    
     record_tracker: RecordTracker,
+    record_store: RecordStore,
     record_classifier: Classifier,
 
     // TUI state
@@ -29,42 +29,44 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
             router: Router::default(),
             last_active_window: None,
             
             record_tracker: RecordTracker::new(),
+            record_store: RecordStore::new(RecordStoreConfig::default())?,
             record_classifier: Classifier::from(ClassifierConfig::default())
-        }
+        })
     }
 
-    pub fn update_window_info(&mut self, info: Option<Archetype>) {
+    pub fn update_window_info(&mut self, info: Option<Archetype>) -> Result<(), Box<dyn std::error::Error>> {
         let is_same_window = info == self.last_active_window;
         let is_afk = is_same_window && self.get_afk_seconds() > 10;
         let info_clone = info.clone();
-        let mut record: Option<ActivityRecord> = None;
 
-        if is_afk {
-            record = self.record_tracker.ping(Some(Archetype::AFK));
-        } else {
-            record = self.record_tracker.ping(info);
-
+        let mut record = if is_afk {
+            self.record_tracker.ping(Some(Archetype::AFK))
+        } else { 
             if !is_same_window {
                 self.timer_reset();
                 self.last_active_window = info_clone;
             }
-        }
+            self.record_tracker.ping(info)
+        };
 
         match record {
             Some(ref mut rec) => {
                 self.record_classifier.classify(rec);
-                // pass the record over to record store
+                self.record_store.push_record(rec.clone())?;
+
             },
             _ => {}
-        }
+        };
+
+        Ok({})
     }
 
     pub fn update_mouse_info(&mut self, mouse_info: &MouseState) {
