@@ -54,7 +54,7 @@ impl RecordTracker {
 
         ActivityRecord {
             archetype,
-            is_productive: None,
+            productivity: ProductivityStatus::Neutral,
             time_range: (start_time, end_time),
         }
     }

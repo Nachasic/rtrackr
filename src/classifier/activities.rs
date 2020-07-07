@@ -5,6 +5,7 @@ use super::{
     rules::RuleInternal,
 };
 
+#[derive(Debug, Default)]
 pub struct ActivityInternal {
     pub name: String,
     pub productivity: i8,

@@ -5,18 +5,24 @@ use crate::{
         Archetype,
         ActivityRecord,
         RecordTracker,
-        RecordStore,
-    }
+        RecordStore
+    },
+    classifier::{
+        Classifier, ClassifierConfig
+    },
 };
 use std::time;
 use ui::*;
 
 pub struct AppState {
     // Tracking information
-    record_tracker: RecordTracker,
     last_moment_active: time::SystemTime,
     last_mouse_position: (i32, i32),
     last_active_window: Option<Archetype>,
+    
+    
+    record_tracker: RecordTracker,
+    record_classifier: Classifier,
 
     // TUI state
     pub router: Router,
@@ -28,8 +34,10 @@ impl AppState {
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
             router: Router::default(),
-            record_tracker: RecordTracker::new(),
             last_active_window: None,
+            
+            record_tracker: RecordTracker::new(),
+            record_classifier: Classifier::from(ClassifierConfig::default())
         }
     }
 
@@ -50,7 +58,13 @@ impl AppState {
             }
         }
 
-        /// pass the record over to record store
+        match record {
+            Some(ref mut rec) => {
+                self.record_classifier.classify(rec);
+                // pass the record over to record store
+            },
+            _ => {}
+        }
     }
 
     pub fn update_mouse_info(&mut self, mouse_info: &MouseState) {
@@ -79,6 +93,7 @@ impl AppState {
 
     /// Gets current tracking information
     pub fn get_current_archetype(&self) -> &Option<Archetype> {
+        // TODO: change this to a function that fetches top record from record store
         self.record_tracker.get_current_archetype()
     }
 

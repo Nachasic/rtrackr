@@ -12,10 +12,17 @@ pub use self::{
     tracker::RecordTracker,
 };
 
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ProductivityStatus {
+    Leisure(String),
+    Neutral,
+    Productive(String)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ActivityRecord {
     pub time_range: (SystemTime, SystemTime),
-    pub is_productive: Option<bool>,
+    pub productivity: ProductivityStatus,
     pub archetype: Archetype,
 }
 

@@ -1,3 +1,6 @@
+use toml;
+use std::fs::File;
+
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct Rule {
     pub for_name: Option<Vec<String>>,
@@ -19,18 +22,13 @@ pub struct Activity {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Machine {
+pub struct ClassifierConfig {
     pub name: Option<String>,
     pub activity: Option<Vec<Activity>>
 }
 
-#[cfg(test)]
-mod test {
-    use toml;
-    use super::*;
-
-    #[test]
-    fn test_config() {
+impl Default for ClassifierConfig {
+    fn default() -> Self {
         let config = r#"
         name = "Home computer"
         
@@ -55,8 +53,20 @@ mod test {
                 # title_ends_with = ""
                 # title_starts_with = ""
         "#;
-        let result: Machine = toml::from_str(config).unwrap();
-        let result_toml = toml::to_string_pretty(&result).unwrap();
-        dbg!(result_toml);
+        toml::from_str(config).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_config() {
+        let config = ClassifierConfig::default();
+        let result_toml = toml::to_string_pretty(&config);
+
+        assert_eq!(result_toml.is_ok(), true);
+        dbg!(result_toml.unwrap());
     }
 }
