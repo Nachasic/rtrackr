@@ -3,6 +3,15 @@ use crate::{ record_store::Archetype };
 use std::borrow::Cow;
 use tui::widgets::Text;
 
+const CAPTION_AFK: &'static str = r#"
+    █████╗ ███████╗██╗  ██╗
+   ██╔══██╗██╔════╝██║ ██╔╝
+   ███████║█████╗  █████╔╝ 
+   ██╔══██║██╔══╝  ██╔═██╗ 
+   ██║  ██║██║     ██║  ██╗
+   ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝
+"#;
+
 pub fn cow(str: &str) -> Cow<'_, str> {
     Cow::Borrowed(str)
 }
@@ -22,7 +31,7 @@ impl <'a> ToWidgets for TUIWindowInfo<'a> {
     fn to_widgets(&self) -> Self::Res {
         match self.archetype {
             None => vec![Text::Styled(cow("No active window \n"), *STYLE::STYLE_TEXT_WARNING)],
-            Some(Archetype::AFK) => vec![Text::Styled(cow("AFK \n"), *STYLE::STYLE_TEXT_WARNING)],
+            Some(Archetype::AFK) => vec![Text::Styled(cow(CAPTION_AFK), *STYLE::STYLE_TEXT_WARNING)],
             Some(Archetype::ActiveWindow(title, name, ..)) => vec![
                 Text::Styled(cow("Active window:"), *STYLE::STYLE_TEXT_HEADER),
                 Text::Raw(cow("\n")),

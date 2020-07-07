@@ -13,15 +13,9 @@ impl From<&ProjectDirs> for RecordStoreConfig {
     }
 }
 
-#[cfg(test)]
-pub mod testable {
-    pub use super::RecordStoreConfig;
-    use std::path::PathBuf;
-
-    impl RecordStoreConfig {
-        pub fn test_instance() -> Self {
-            let data_dir = PathBuf::from("./test-data/db_access");
-            Self { data_dir }
-        }
+impl Default for RecordStoreConfig {
+    fn default() -> Self {
+        let data_dir = PathBuf::from("./dev-data/db_access");
+        Self { data_dir }
     }
 }
