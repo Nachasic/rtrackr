@@ -35,6 +35,7 @@ impl XORGWindowManager {
         let title = XWMName::get_as_property(&self.display, active_window_uid)?;
         let (app_name, app_class) = XWMClass::get_as_property(&self.display, active_window_uid)?;
 
+
         Ok(Archetype::ActiveWindow(title, app_name, app_class))
     }
 }

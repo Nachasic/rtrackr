@@ -3,7 +3,6 @@ use std::{
     ffi::{ CStr, c_void },
     marker::PhantomData,
     ptr::null_mut,
-    panic::catch_unwind,
     ops::Drop,
 };
 use x11::xlib::{
@@ -86,18 +85,16 @@ impl<'a> Atom for XWMName<'a> {
         display: &Display,
         window: Window,
     ) -> Result<Self::PropertyType, Self::ErrorType> {
-        catch_unwind(|| {
-            let mut atom = Self::default();
-            unsafe { XGetWMName(display.0, window, &mut atom.property) };
+        let mut atom = Self::default();
+        unsafe { XGetWMName(display.0, window, &mut atom.property) };
 
-            if !atom.property.value.is_null() {
-                let text = unsafe { CStr::from_ptr(atom.property.value as *mut i8) };
-    
-                return Ok(text.to_string_lossy().into_owned());
-            } else {
-                return Err(XAtomError::NoProperty("WM_NAME"));
-            };
-        }).map_err(|_| XAtomError::BadWindow)?
+        if !atom.property.value.is_null() {
+            let text = unsafe { CStr::from_ptr(atom.property.value as *mut i8) };
+
+            return Ok(text.to_string_lossy().into_owned());
+        } else {
+            return Err(XAtomError::NoProperty("WM_NAME"));
+        };
     }
 }
 
@@ -141,21 +138,19 @@ impl<'a> Atom for XWMClass<'a> {
         display: &Display,
         window: Window,
     ) -> Result<Self::PropertyType, Self::ErrorType> {
-        catch_unwind(|| {
-            let mut atom = Self::default();
-            unsafe { XGetClassHint(display.0, window, &mut atom.property) };
-    
-            if !atom.property.res_name.is_null() && !atom.property.res_class.is_null() {
-                let name_text = unsafe { CStr::from_ptr(atom.property.res_name as *mut i8) };
-                let class_text = unsafe { CStr::from_ptr(atom.property.res_class as *mut i8) };
-    
-                return Ok((
-                    String::from(name_text.to_str()?),
-                    String::from(class_text.to_str()?),
-                ))
-            } else {
-                return Err(XAtomError::NoProperty("WM_CLASS"))
-            }
-        }).map_err(|_| XAtomError::BadWindow)?
+        let mut atom = Self::default();
+        unsafe { XGetClassHint(display.0, window, &mut atom.property) };
+
+        if !atom.property.res_name.is_null() && !atom.property.res_class.is_null() {
+            let name_text = unsafe { CStr::from_ptr(atom.property.res_name as *mut i8) };
+            let class_text = unsafe { CStr::from_ptr(atom.property.res_class as *mut i8) };
+
+            return Ok((
+                String::from(name_text.to_str()?),
+                String::from(class_text.to_str()?),
+            ))
+        } else {
+            return Err(XAtomError::NoProperty("WM_CLASS"))
+        }
     }
 }

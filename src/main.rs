@@ -67,7 +67,9 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
                     Key::Ctrl('c') => is_running = false,
                     _ => {}
                 },
-                Event::Tick => tui.draw(&mut state)?,
+                Event::Tick => {
+                    tui.draw(&mut state)?
+                },
             }
         }
     }
