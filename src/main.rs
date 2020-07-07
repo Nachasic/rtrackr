@@ -28,7 +28,7 @@ where
 {
     let active_window = wm.get_window_archetype();
 
-    state.updated_window_info(active_window);
+    state.update_window_info(active_window);
     Ok({})
 }
 
@@ -57,8 +57,8 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
             .duration_since(cycle_start_time)
             .unwrap_or(time::Duration::new(0, 0));
 
-        state.updated_keys(keys);
-        state.updated_mouse_info(&mouse);
+        state.update_keys(keys);
+        state.update_mouse_info(&mouse);
 
         if time_elapsed > sleep_duration {
             update_window_info(&wm, &mut state)?;

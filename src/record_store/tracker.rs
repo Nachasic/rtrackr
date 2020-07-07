@@ -3,40 +3,49 @@ use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct RecordTracker {
-    current_archetype: Option<Archetype>,
     time_of_first_submission: SystemTime,
+    current_archetype: Option<Archetype>
 }
 
 impl RecordTracker {
     pub fn new() -> Self {
         Self {
-            current_archetype: None,
             time_of_first_submission: SystemTime::now(),
+            current_archetype: None
         }
     }
 
-    pub fn ping(&mut self, arch: Archetype) -> Option<ActivityRecord> {
+    pub fn get_current_archetype(&self) -> &Option<Archetype> {
+        &self.current_archetype
+    }
+
+    pub fn ping(&mut self, arch: Option<Archetype>) -> Option<ActivityRecord> {
         let current = &self.current_archetype;
 
-        match current {
-            Some(ref cur_arch) => {
-                if cur_arch != &arch {
-                    let archetype = cur_arch.clone();
-                    let start_time = self.time_of_first_submission.clone();
-                    let record = Self::produce_record(archetype, start_time);
+        if match (current, &arch)  {
+            (Some(current_arch), Some(in_arch)) => current_arch != in_arch,
+            (None, None) => false,
+            _ => true
+        } {
+            let start_time = self.time_of_first_submission.clone();
+            let mut result: Option<ActivityRecord> = None;
 
-                    self.current_archetype = Some(arch);
-                    self.time_of_first_submission = SystemTime::now();
-                    return Some(record);
-                } else {
-                    return None;
-                }
+            match (current, &arch) {
+                (Some(cur_arch), Some(_)) |
+                (Some(cur_arch), None) => {
+                    result = Some(
+                        Self::produce_record(cur_arch.clone(), start_time)
+                    )
+                },
+                (None, Some(_)) => {},
+                _ => unreachable!()
             }
-            None => {
-                self.current_archetype = Some(arch);
-                self.time_of_first_submission = SystemTime::now();
-                return None;
-            }
+            
+            self.current_archetype = arch;
+            self.time_of_first_submission = SystemTime::now();
+            result
+        } else {
+            None
         }
     }
 
@@ -59,11 +68,23 @@ fn report_production() {
         String::from("my_app"),
         String::from("basic app"),
     );
+    let arch2 = (&arch).clone();
 
-    let report = tracker.ping(arch);
+    let report1 = tracker.ping(Some(arch));
+    assert_eq!(report1.is_some(), false);
 
-    assert!(match report {
-        None => true,
-        _ => false,
-    })
+    let report2 = tracker.ping(None);
+    assert_eq!(report2.is_some(), true);
+
+    let report3 = tracker.ping(None);
+    assert_eq!(report3.is_some(), false);
+
+    let report4 = tracker.ping(Some(Archetype::AFK));
+    assert_eq!(report4.is_some(), false);
+
+    let report5 = tracker.ping(Some(arch2));
+    assert_eq!(report5.is_some(), true);
+
+    let report6 = tracker.ping(None);
+    assert_eq!(report6.is_some(), true);
 }
