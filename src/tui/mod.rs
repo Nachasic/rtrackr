@@ -28,7 +28,7 @@ impl Tui {
 
     pub fn draw(&mut self, state: &mut AppState) -> io::Result<()> {
         let tui_window_info = TUIWindowInfo {
-            archetype: &state.active_window_info
+            archetype: &state.get_current_archetype()
         };
 
         self.terminal.draw(|mut f| {
