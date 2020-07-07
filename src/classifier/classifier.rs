@@ -1,20 +1,22 @@
 use super::{
-    config::Machine,
+    config::ClassifierConfig,
     rules::RuleInternal,
     activities::ActivityInternal,
     super::record_store::{
         ActivityRecord,
+        ProductivityStatus,
         Archetype
     }
 };
 
+#[derive(Debug, Default)]
 pub struct Classifier {
     machine_name: String,
     activities: Vec<ActivityInternal>
 }
 
-impl From<Machine> for Classifier {
-    fn from(config: Machine) -> Self {
+impl From<ClassifierConfig> for Classifier {
+    fn from(config: ClassifierConfig) -> Self {
         Self {
             machine_name: config.name.unwrap_or(String::from("unnamed machine")),
             activities: match config.activity {
@@ -42,21 +44,27 @@ impl Classifier {
         let arch = &record.archetype;
 
         match arch {
-            Archetype::AFK => { record.is_productive = None; },
+            Archetype::AFK => { record.productivity = ProductivityStatus::Neutral; },
             Archetype::ActiveWindow(title, name, class) => {
                 for activity in activities {
                     let productivity = if activity.productivity > 0 {
-                        Some(true)
+                        ProductivityStatus::Productive(activity.name.clone())
                     } else if activity.productivity < 0 {
-                        Some(false)
+                        ProductivityStatus::Leisure(activity.name.clone())
                     } else {
-                        None
+                        ProductivityStatus::Neutral
                     };
+                    let mut some_rule_applies: bool = false;
         
                     for rule in &activity.rules {
                         if rule.apply(&name, &class, &title) {
-                            record.is_productive = productivity;
+                            some_rule_applies = true;
+                            break;
                         }
+                    }
+
+                    if some_rule_applies {
+                        record.productivity = productivity
                     }
                 }
             }

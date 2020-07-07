@@ -4,10 +4,12 @@ use super::super::record_store::{
 };
 
 use super::config::{
-    Machine,
+    ClassifierConfig,
     Activity as RawActivity,
     Rule as RawRule
 };
+
+#[derive(Debug)]
 pub enum Filter {
     TitleContainsAll(Vec<String>),
     TitleContainsAny(Vec<String>),
@@ -16,10 +18,17 @@ pub enum Filter {
     TitleEndsWith(String)
 }
 
+#[derive(Debug)]
 pub enum RuleInternal {
     ForName(Vec<String>, Vec<Filter>),
     ForClass(Vec<String>, Vec<Filter>),
     ForTitle(Vec<String>, Vec<Filter>)
+}
+
+impl Default for RuleInternal {
+    fn default() -> Self {
+        RuleInternal::ForName(vec![], vec![])
+    }
 }
 
 impl From<RawRule> for Option<RuleInternal> {
