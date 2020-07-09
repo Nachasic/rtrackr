@@ -1,4 +1,3 @@
-mod ui;
 use crate::{
     window_manager::MouseState,
     record_store::{
@@ -10,9 +9,11 @@ use crate::{
     classifier::{
         Classifier, ClassifierConfig
     },
+    tui::{
+        Router
+    },
 };
 use std::time;
-use ui::*;
 
 pub struct AppState {
     // Tracking information
@@ -95,7 +96,6 @@ impl AppState {
 
     /// Gets current tracking information
     pub fn get_current_archetype(&self) -> &Option<Archetype> {
-        // TODO: change this to a function that fetches top record from record store
         self.record_tracker.get_current_archetype()
     }
 

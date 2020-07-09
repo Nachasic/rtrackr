@@ -5,6 +5,6 @@ mod classifier;
 
 
 pub use self::{
-    classifier::Classifier,
+    classifier::{ Classifier, Classifiable },
     config::ClassifierConfig,
 };

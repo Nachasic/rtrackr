@@ -1,13 +1,16 @@
 use super::{
     config::ClassifierConfig,
-    rules::RuleInternal,
     activities::ActivityInternal,
     super::record_store::{
-        ActivityRecord,
         ProductivityStatus,
         Archetype
     }
 };
+
+pub trait Classifiable {
+    fn get_archetype(&self) -> &Archetype;
+    fn assign_productivity(&mut self, productivity: ProductivityStatus);
+}
 
 #[derive(Debug, Default)]
 pub struct Classifier {
@@ -39,33 +42,35 @@ impl From<ClassifierConfig> for Classifier {
 }
 
 impl Classifier {
-    pub fn classify(&self, record: &mut ActivityRecord) {
+    pub fn classify(&self, record: &mut dyn Classifiable) {
         let activities = &self.activities;
-        let arch = &record.archetype;
+        let arch = record.get_archetype();
 
         match arch {
-            Archetype::AFK => { record.productivity = ProductivityStatus::Neutral; },
+            Archetype::AFK => { record.assign_productivity(ProductivityStatus::Neutral); },
             Archetype::ActiveWindow(title, name, class) => {
-                for activity in activities {
-                    let productivity = if activity.productivity > 0 {
+                let mut some_activity_applies: bool = false;
+                let mut productivity: ProductivityStatus = ProductivityStatus::Neutral;
+
+                'activities: for activity in activities {
+                    productivity = if activity.productivity > 0 {
                         ProductivityStatus::Productive(activity.name.clone())
                     } else if activity.productivity < 0 {
                         ProductivityStatus::Leisure(activity.name.clone())
                     } else {
                         ProductivityStatus::Neutral
                     };
-                    let mut some_rule_applies: bool = false;
         
                     for rule in &activity.rules {
                         if rule.apply(&name, &class, &title) {
-                            some_rule_applies = true;
-                            break;
+                            some_activity_applies = true;
+                            break 'activities;
                         }
                     }
+                }
 
-                    if some_rule_applies {
-                        record.productivity = productivity
-                    }
+                if some_activity_applies {
+                    record.assign_productivity(productivity);
                 }
             }
         }   

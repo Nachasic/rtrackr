@@ -6,6 +6,8 @@ mod utils;
 
 use std::time::SystemTime;
 
+use crate::classifier::Classifiable;
+
 pub use self::config::*;
 pub use self::{
     store::RecordStore,
@@ -31,4 +33,14 @@ pub enum Archetype {
     /// Stores title, app name and app class in that order
     ActiveWindow(String, String, String),
     AFK,
+}
+
+impl Classifiable for ActivityRecord {
+    fn get_archetype(&self) -> &Archetype {
+        &self.archetype
+    }
+
+    fn assign_productivity(&mut self, productivity: ProductivityStatus) {
+        self.productivity = productivity;
+    }
 }
