@@ -49,11 +49,10 @@ impl Classifier {
         match arch {
             Archetype::AFK => { record.assign_productivity(ProductivityStatus::Neutral); },
             Archetype::ActiveWindow(title, name, class) => {
-                let mut some_activity_applies: bool = false;
                 let mut productivity: ProductivityStatus = ProductivityStatus::Neutral;
 
-                'activities: for activity in activities {
-                    productivity = if activity.productivity > 0 {
+                for activity in activities {
+                    let act_prod = if activity.productivity > 0 {
                         ProductivityStatus::Productive(activity.name.clone())
                     } else if activity.productivity < 0 {
                         ProductivityStatus::Leisure(activity.name.clone())
@@ -61,17 +60,15 @@ impl Classifier {
                         ProductivityStatus::Neutral
                     };
         
-                    for rule in &activity.rules {
+                    'rules: for rule in &activity.rules {
                         if rule.apply(&name, &class, &title) {
-                            some_activity_applies = true;
-                            break 'activities;
+                            productivity = act_prod;
+                            break 'rules;
                         }
                     }
                 }
 
-                if some_activity_applies {
-                    record.assign_productivity(productivity);
-                }
+                record.assign_productivity(productivity);
             }
         }   
     }
