@@ -10,7 +10,7 @@ use crate::{
         Classifier, ClassifierConfig
     },
     tui::{
-        Router
+        Router, Routes
     },
 };
 use std::time;
@@ -34,7 +34,9 @@ impl AppState {
         Ok(Self {
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
-            router: Router::default(),
+            router: Router {
+                active_route: Routes::Main,
+            },
             last_active_window: None,
             
             record_tracker: RecordTracker::new(),
@@ -97,6 +99,10 @@ impl AppState {
     /// Gets current tracking information
     pub fn get_current_archetype(&self) -> &Option<Archetype> {
         self.record_tracker.get_current_archetype()
+    }
+
+    pub fn classifier(&self) -> &Classifier {
+        &self.record_classifier
     }
 
     fn timer_reset(&mut self) {

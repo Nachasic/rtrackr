@@ -2,7 +2,6 @@ mod event;
 mod record_store;
 mod state;
 mod tui;
-mod window;
 mod window_manager;
 mod xorg;
 mod classifier;
@@ -12,6 +11,7 @@ use state::AppState;
 use std::time;
 use window_manager::OSWindowManager;
 use xorg::XORGWindowManager;
+use crate::tui::*;
 
 #[macro_use]
 extern crate lazy_static;
@@ -68,7 +68,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
                     _ => {}
                 },
                 Event::Tick => {
-                    tui.draw(&mut state)?
+                    tui.draw(&mut state)?;
                 },
             }
         }
@@ -84,3 +84,4 @@ async fn main() {
     };
     println!("Done, goodbye!");
 }
+
