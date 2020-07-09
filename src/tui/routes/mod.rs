@@ -4,6 +4,7 @@ mod route;
 pub use route_main::*;
 pub use route::*;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Routes {
     Main
 }

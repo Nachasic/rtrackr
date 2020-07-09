@@ -39,8 +39,8 @@ impl Default for ClassifierConfig {
             productivity = 1
         
             [[activity.rule]]
-                for_class = ["code-oss"]
-                title_conains_any = ["rtrackr", "frontend"]
+                for_name = ["code-oss"]
+                title_contains_any = ["main.rs", "frontend"]
         
             [[activity.rule]]
                 # Grabbing by app name

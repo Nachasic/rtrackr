@@ -90,7 +90,7 @@ impl RuleInternal {
     }
 
     fn check_title(title: &String, filters: &Vec<Filter>) -> bool {
-        let mut result: bool = false;
+        let mut result: bool = filters.len() == 0;
 
         for filter in filters {
             result = false;

@@ -12,6 +12,7 @@ pub use routes::*;
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    current_route: Routes,
 }
 
 impl Tui {
@@ -21,6 +22,7 @@ impl Tui {
         let backend = CrosstermBackend::new(stdout);
         Ok(Self {
             terminal: Terminal::new(backend)?,
+            current_route: Routes::Main,
         })
     }
 

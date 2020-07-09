@@ -7,7 +7,7 @@ name = "Home computer"
     productivity = 1
 
     [[activity.rule]]
-        for_class = ["code-oss"]
+        for_name = ["code-oss"]
         title_conains_any = ["rtrackr", "frontend"]
 
     [[activity.rule]]
