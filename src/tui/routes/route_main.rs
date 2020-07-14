@@ -1,16 +1,19 @@
 use crate::{
-    record_store::{ Archetype, ProductivityStatus },
+    record_store::{ Archetype, ProductivityStatus, ActivityRecord },
     state::{ AppState },
     classifier::Classifiable,
     tui::{
         style as STYLE,
         components::{ ToWidgets, cow },
-        routes::{ Route, RenderTUI, TUIFrame },
+        routes::{ Route, TUIFrame, StatefulTUIComponent },
     }
 };
 use tui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph, Text },
+    layout::{ Alignment, Constraint, Direction, Layout },
+    widgets::{ Block, Borders, Paragraph, Text },
+};
+use std::{
+    time::Duration
 };
 
 const CAPTION_AFK: &'static str = r#"
@@ -103,20 +106,79 @@ impl From<&AppState> for Option<DisplayArchetype> {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct RouteMain;
+/// Main screen of the app
+/// Displays:
+/// - Current focused window info
+///    - Window title
+///    - Application name
+///    - Application class
+///    - Productivity rating
+/// - Total amound of time tracked today
+/// - Productivity line-chart
+/// - List of today's records (same info as for current focused window)
+/// - Pause/resume tracking button
+#[derive(Debug, Default, Clone)]
+pub struct RouteMain {
+    display: Option<DisplayArchetype>,
+    records: Vec<ActivityRecord>,
+    tracking_time: Duration
+}
 impl Route for RouteMain {}
 
-impl RenderTUI<RouteMain> for AppState {
+impl From<&AppState> for RouteMain {
+    fn from(state: &AppState) -> Self {
+        let records = state.store().query_records()
+            .unwrap_or(vec![]);
+        let tracking_time = {
+            records.iter().fold(
+                Duration::from_secs(0),
+                |duration, data| {
+                    let (start, end) = data.time_range;
+
+                    duration + end.duration_since(start)
+                        .unwrap_or(Duration::from_secs(0))
+                }
+            )
+        };
+        Self {
+            display: Option::<DisplayArchetype>::from(state),
+            records,
+            tracking_time
+        }
+    }
+}
+
+impl StatefulTUIComponent for RouteMain {
+    fn tick(&mut self, app_state: &AppState) {
+        let records = app_state.store().query_records()
+            .unwrap_or(vec![]);
+        
+        if records.len() != self.records.len() {
+            self.tracking_time = {
+                records.iter().fold(
+                    Duration::from_secs(0),
+                    |duration, data| {
+                        let (start, end) = data.time_range;
+    
+                        duration + end.duration_since(start)
+                            .unwrap_or(Duration::from_secs(0))
+                    }
+                )
+            };
+        }
+
+        self.display = Option::<DisplayArchetype>::from(app_state);
+        self.tracking_time += app_state.tracker().get_current_tracking_period();
+    }
+
     fn render(&self, frame: &mut TUIFrame) {
-        let display = Option::<DisplayArchetype>::from(self);
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
             .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
             .split(frame.size());
 
-        let window_info_text = (&display).to_widgets();
+        let window_info_text = (&self.display).to_widgets();
 
         let block = Block::default()
             .title(" Active window info ")

@@ -40,7 +40,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
     let sleep_duration = time::Duration::new(1, 0);
 
     let events = Events::with_config(EventConfig::default());
-    let mut tui = tui::Tui::new()?;
+    let mut tui = tui::Tui::new(&state)?;
 
     tui.clear()?;
 
@@ -58,6 +58,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
 
         if time_elapsed > sleep_duration {
             update_window_info(&wm, &mut state)?;
+            tui.tick(&state);
             cycle_start_time = current_time;
         }
 
@@ -68,7 +69,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
                     _ => {}
                 },
                 Event::Tick => {
-                    tui.draw(&mut state)?;
+                    tui.draw()?;
                 },
             }
         }

@@ -13,17 +13,24 @@ pub use routes::*;
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     current_route: Routes,
+    current_route_component: Box<dyn StatefulTUIComponent>
 }
 
 impl Tui {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(state: &AppState) -> Result<Self, Box<dyn std::error::Error>> {
         enable_raw_mode()?;
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
+        let current_route_component = Box::new(RouteMain::from(state));
         Ok(Self {
             terminal: Terminal::new(backend)?,
             current_route: Routes::Main,
+            current_route_component
         })
+    }
+
+    pub fn tick(&mut self, state: &AppState) {
+        self.current_route_component.tick(state);
     }
 
     pub fn clear(&mut self) -> io::Result<()> {
@@ -31,12 +38,9 @@ impl Tui {
         self.terminal.clear()
     }
 
-    pub fn draw(&mut self, state: &AppState) -> std::io::Result<()> {
-        let route = state.router.get_active_route();
-
-        match route {
-            Routes::Main => self.terminal.draw(|ref mut f| RenderTUI::<RouteMain>::render(state, f)),
-        }
+    pub fn draw(&mut self) -> std::io::Result<()> {
+        let component = &self.current_route_component;
+        self.terminal.draw(|ref mut f| component.render(f))
     }
 }
 

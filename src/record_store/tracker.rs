@@ -1,5 +1,7 @@
 use super::*;
-use std::time::SystemTime;
+use std::time::{
+    SystemTime, Duration
+};
 
 #[derive(Debug)]
 pub struct RecordTracker {
@@ -57,6 +59,10 @@ impl RecordTracker {
             productivity: ProductivityStatus::Neutral,
             time_range: (start_time, end_time),
         }
+    }
+
+    pub fn get_current_tracking_period(&self) -> Duration {
+        SystemTime::now().duration_since(self.time_of_first_submission).unwrap_or(Duration::from_secs(0))
     }
 }
 

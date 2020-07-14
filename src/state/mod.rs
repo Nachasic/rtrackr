@@ -105,6 +105,14 @@ impl AppState {
         &self.record_classifier
     }
 
+    pub fn store(&self) -> &RecordStore {
+        &self.record_store
+    }
+
+    pub fn tracker(&self) -> &RecordTracker {
+        &self.record_tracker
+    }
+
     fn timer_reset(&mut self) {
         self.last_moment_active = time::SystemTime::now();
     }
