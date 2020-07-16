@@ -1,5 +1,8 @@
 use toml;
-use std::fs::File;
+use std::{
+    fs::File,
+    io::Read
+};
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct Rule {
@@ -29,7 +32,7 @@ pub struct ClassifierConfig {
 
 impl Default for ClassifierConfig {
     fn default() -> Self {
-        let config = r#"
+        let default_cfg = r#"
         name = "Home computer"
         
         [[activity]]
@@ -53,7 +56,15 @@ impl Default for ClassifierConfig {
                 # title_ends_with = ""
                 # title_starts_with = ""
         "#;
-        toml::from_str(config).unwrap()
+        let mut config = String::default();
+        let config_file = File::open("./dev-data/sample_config.toml");
+        
+        match config_file {
+            Ok(mut file) => { file.read_to_string(&mut config).unwrap(); },
+            _ => config = String::from(default_cfg)
+        }
+
+        toml::from_str(&config).unwrap()
     }
 }
 

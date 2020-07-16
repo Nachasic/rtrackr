@@ -12,7 +12,6 @@ pub use routes::*;
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
-    current_route: Routes,
     current_route_component: Box<dyn StatefulTUIComponent>
 }
 
@@ -24,9 +23,14 @@ impl Tui {
         let current_route_component = Box::new(RouteMain::from(state));
         Ok(Self {
             terminal: Terminal::new(backend)?,
-            current_route: Routes::Main,
             current_route_component
         })
+    }
+
+    pub fn switch_route(&mut self, route: Routes, state: &AppState) {
+        match route {
+            Routes::Main => self.current_route_component = Box::new(RouteMain::from(state))
+        }
     }
 
     pub fn tick(&mut self, state: &AppState) {
