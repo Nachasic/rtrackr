@@ -27,6 +27,7 @@ pub struct Activity {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClassifierConfig {
     pub name: Option<String>,
+    pub afk_interval: Option<u64>,
     pub activity: Option<Vec<Activity>>
 }
 
@@ -37,6 +38,7 @@ impl Default for ClassifierConfig {
         
         [[activity]]
             name = "coding"
+            afk_interval = 30
         
             # 1 = Productive, -1 = Leisure, 0 = Neutral
             productivity = 1

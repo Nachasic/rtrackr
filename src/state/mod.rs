@@ -31,6 +31,9 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let record_store_config = RecordStoreConfig::default();
+        let record_classifier_config = ClassifierConfig::default();
+
         Ok(Self {
             last_moment_active: time::SystemTime::now(),
             last_mouse_position: (0, 0),
@@ -40,14 +43,14 @@ impl AppState {
             last_active_window: None,
             
             record_tracker: RecordTracker::new(),
-            record_store: RecordStore::new(RecordStoreConfig::default())?,
-            record_classifier: Classifier::from(ClassifierConfig::default())
+            record_store: RecordStore::new(record_store_config)?,
+            record_classifier: Classifier::from(record_classifier_config)
         })
     }
 
     pub fn update_window_info(&mut self, info: Option<Archetype>) -> Result<(), Box<dyn std::error::Error>> {
         let is_same_window = info == self.last_active_window;
-        let is_afk = is_same_window && self.get_afk_seconds() > 10;
+        let is_afk = is_same_window && self.get_afk_seconds() > self.record_classifier.afk_timeout.as_secs();
         let info_clone = info.clone();
 
         let mut record = if is_afk {

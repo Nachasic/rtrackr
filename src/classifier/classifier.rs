@@ -14,6 +14,7 @@ pub trait Classifiable {
 
 #[derive(Debug, Default)]
 pub struct Classifier {
+    pub afk_timeout: std::time::Duration,
     machine_name: String,
     activities: Vec<ActivityInternal>
 }
@@ -21,6 +22,10 @@ pub struct Classifier {
 impl From<ClassifierConfig> for Classifier {
     fn from(config: ClassifierConfig) -> Self {
         Self {
+            afk_timeout: config.afk_interval.map_or(
+                std::time::Duration::from_secs(75),
+                |secs| std::time::Duration::from_secs(secs)
+            ),
             machine_name: config.name.unwrap_or(String::from("unnamed machine")),
             activities: match config.activity {
                 Some(conf_acts) => {

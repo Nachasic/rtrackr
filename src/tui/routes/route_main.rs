@@ -175,7 +175,7 @@ impl StatefulTUIComponent for RouteMain {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
-            .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
             .split(frame.size());
 
         let window_info_text = (&self.display).to_widgets();
