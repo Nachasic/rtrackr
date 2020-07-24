@@ -3,6 +3,7 @@ use std::{
     fs::File,
     io::Read
 };
+use crate::constants::*;
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct Rule {
@@ -31,42 +32,41 @@ pub struct ClassifierConfig {
     pub activity: Option<Vec<Activity>>
 }
 
+fn get_config_from_dbg_file() -> ClassifierConfig {
+        let mut config = String::default();
+        let mut config_file = File::open(DEV_CONFIG_PATH)
+            .expect(&format!("Could not open dev config file at {}", DEV_CONFIG_PATH));
+        
+        config_file.read_to_string(&mut config).unwrap();
+        toml::from_str(&config).unwrap()
+}
+
+fn get_global_config () -> ClassifierConfig {
+    match directories::ProjectDirs::from(APP_CLASSIFIER, APP_CORP, APP_NAME) {
+        Some(dirs) => {
+            let config_path = dirs.data_dir().join("config.toml");
+            let mut config: String = String::default();
+
+            match File::open(&config_path) {
+                Ok(ref mut file) => {
+                    file.read_to_string(&mut config).unwrap();
+                    toml::from_str(&config)
+                        .expect(&format!("Could not parse config file at {:?}", &config_path))
+                },
+                _ => get_config_from_dbg_file()
+            }
+        },
+        _ => get_config_from_dbg_file()
+    }
+}
+
 impl Default for ClassifierConfig {
     fn default() -> Self {
-        let default_cfg = r#"
-        name = "Home computer"
+        #[cfg(debug_assertions)]
+        { get_config_from_dbg_file() }
         
-        [[activity]]
-            name = "coding"
-            afk_interval = 30
-        
-            # 1 = Productive, -1 = Leisure, 0 = Neutral
-            productivity = 1
-        
-            [[activity.rule]]
-                for_name = ["code-oss"]
-                title_contains_any = ["main.rs", "frontend"]
-        
-            [[activity.rule]]
-                # Grabbing by app name
-                for_name = ["Navigator", "Google-Chrome"]
-        
-                # Providing multiple criteria is equivalent to "OR" operation
-                title_contains_any = ["rtrackr"]
-                # title_contains_all = ["github"]
-                # title_is = ""
-                # title_ends_with = ""
-                # title_starts_with = ""
-        "#;
-        let mut config = String::default();
-        let config_file = File::open("./dev-data/sample_config.toml");
-        
-        match config_file {
-            Ok(mut file) => { file.read_to_string(&mut config).unwrap(); },
-            _ => config = String::from(default_cfg)
-        }
-
-        toml::from_str(&config).unwrap()
+        #[cfg(not(debug_assertions))]
+        { get_global_config() }
     }
 }
 

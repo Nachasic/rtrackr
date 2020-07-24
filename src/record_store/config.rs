@@ -1,21 +1,28 @@
-use directories::ProjectDirs;
 use std::path::PathBuf;
+use crate::constants::*;
 
 pub struct RecordStoreConfig {
     pub data_dir: PathBuf,
 }
 
-impl From<&ProjectDirs> for RecordStoreConfig {
-    fn from(dirs: &ProjectDirs) -> Self {
-        let data_dir = dirs.data_dir().to_owned();
+fn get_config_from_dbg_file() -> RecordStoreConfig {
+    let data_dir = PathBuf::from(DEV_DB_PATH);
+    RecordStoreConfig { data_dir }
+}
 
-        Self { data_dir }
+fn get_global_config() -> RecordStoreConfig {
+    match directories::ProjectDirs::from(APP_CLASSIFIER, APP_CORP, APP_NAME) {
+        Some(dirs) => RecordStoreConfig { data_dir: dirs.data_dir().to_owned() },
+        None => get_config_from_dbg_file()
     }
 }
 
 impl Default for RecordStoreConfig {
     fn default() -> Self {
-        let data_dir = PathBuf::from("./dev-data/db_access");
-        Self { data_dir }
+        #[cfg(debug_assertions)]
+        { get_config_from_dbg_file() }
+        
+        #[cfg(not(debug_assertions))]
+        { get_global_config() }
     }
 }
