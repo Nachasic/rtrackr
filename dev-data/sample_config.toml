@@ -9,14 +9,14 @@ afk_interval = 10
 
     [[activity.rule]]
         for_name = ["code-oss"]
-        title_contains_any = ["rtrackr", "frontend"]
+        title_contains_any = ["trackr", "frontend"]
 
     [[activity.rule]]
         # Grabbing by app name
         for_name = ["Navigator", "Google-Chrome"]
 
         # Providing multiple criteria is equivalent to "OR" operation
-        title_contains_any = ["rtrackr"]
+        title_contains_any = ["trackr"]
         # title_contains_all = ["github"]
         # title_is = ""
         # title_ends_with = ""
