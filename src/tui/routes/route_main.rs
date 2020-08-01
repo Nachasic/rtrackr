@@ -1,4 +1,5 @@
 use crate::{
+    event::Key,
     record_store::{ Archetype, ProductivityStatus, ActivityRecord },
     state::{ AppState },
     classifier::Classifiable,
@@ -149,6 +150,9 @@ impl From<&AppState> for RouteMain {
 }
 
 impl StatefulTUIComponent for RouteMain {
+    fn handle_key(&mut self, event: Key) {
+        
+    }
     fn tick(&mut self, app_state: &AppState) {
         let records = app_state.store().query_records()
             .unwrap_or(vec![]);
