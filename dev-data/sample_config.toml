@@ -9,7 +9,7 @@ afk_interval = 10
 
     [[activity.rule]]
         for_name = ["code-oss"]
-        title_conains_any = ["rtrackr", "frontend"]
+        title_contains_any = ["rtrackr", "frontend"]
 
     [[activity.rule]]
         # Grabbing by app name
