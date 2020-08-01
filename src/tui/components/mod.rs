@@ -12,6 +12,7 @@ pub type TUIFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 
 pub trait StatefulTUIComponent {
     fn handle_key(&mut self, event: Key) {}
+    fn before_render(&mut self, app_state: &AppState) {}
     fn tick(&mut self, app_state: &AppState);
     fn render(&self, frame: &mut TUIFrame, chunk: Rect);
 }

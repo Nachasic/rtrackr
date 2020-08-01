@@ -70,7 +70,7 @@ async fn main_loop() -> Result<(), Box<dyn std::error::Error>> {
                     _ => {}
                 },
                 Event::Tick => {
-                    tui.draw()?;
+                    tui.draw(&state)?;
                 },
             }
         }

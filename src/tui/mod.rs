@@ -52,7 +52,8 @@ impl Tui {
         self.terminal.clear()
     }
 
-    pub fn draw(&mut self) -> std::io::Result<()> {
+    pub fn draw(&mut self, state: &AppState) -> std::io::Result<()> {
+        self.current_route_component.before_render(state);
         let component = &self.current_route_component;
         let active_window_component = &self.active_window_component;
         

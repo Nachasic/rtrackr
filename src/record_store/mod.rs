@@ -21,6 +21,16 @@ pub enum ProductivityStatus {
     Productive(String)
 }
 
+impl From<&ProductivityStatus> for i8 {
+    fn from(status: &ProductivityStatus) -> Self {
+        match status {
+            ProductivityStatus::Neutral => 0,
+            ProductivityStatus::Leisure(_) => -1,
+            ProductivityStatus::Productive(_) => 1
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ActivityRecord {
     pub time_range: (SystemTime, SystemTime),
