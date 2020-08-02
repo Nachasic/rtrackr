@@ -38,6 +38,15 @@ pub struct ActivityRecord {
     pub archetype: Archetype,
 }
 
+impl ActivityRecord {
+    pub fn duration(&self) -> std::time::Duration {
+        self.time_range.1.duration_since(self.time_range.0)
+            .unwrap_or(
+                std::time::Duration::from_secs(0)
+            )
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Archetype {
     /// Stores title, app name and app class in that order

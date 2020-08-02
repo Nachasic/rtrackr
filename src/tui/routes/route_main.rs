@@ -10,7 +10,7 @@ use crate::{
 };
 use tui::{
     layout::{ Alignment, Constraint, Direction, Layout },
-    widgets::{ Block, Borders, Paragraph, Chart, Axis, Dataset as TUIDataset },
+    widgets::{ Block, Borders, Paragraph, Chart, Axis, Dataset as TUIDataset, GraphType },
     symbols,
     style::{ Style, Color },
 };
@@ -21,12 +21,12 @@ use std::{
 type DataPoint = (f64, f64);
 type Dataset = Vec<DataPoint>;
 struct RecordProcessingResult {
-    leusure_avg: DataPoint,
+    // leusure_avg: DataPoint,
     prod_avg: DataPoint,
     duration: f64
 }
 
-const PROCESSING_QUEUE_SIZE: usize = 100;
+const ROLLING_AVERAGE_TIME_WINDOW: Duration = Duration::from_secs(5 * 60);
 
 /// Main screen of the app
 /// Displays:
@@ -42,18 +42,20 @@ const PROCESSING_QUEUE_SIZE: usize = 100;
 #[derive(Debug, Default, Clone)]
 pub struct RouteMain {
     records: Vec<ActivityRecord>,
-    /// Total duration of tracking
+    // /// Total duration of tracking current record
     tracking_time: Duration,
+
+    current_activity: Option<ActivityRecord>,
 
     /// Dataset of all previous productive activities
     dataset_prod_cache: Dataset,
     /// Dataset of all previous leusire activity
-    dataset_leisure_cache: Dataset,
+    // dataset_leisure_cache: Dataset,
 
     /// Dataset for current productive activity
-    dataset_prod: Dataset,
+    last_datapoint: Dataset,
     /// Dataset for current leisure activity
-    dataset_leisure: Dataset,
+    // dataset_leisure: Dataset,
 
 
     /// Number of records processed and cached
@@ -63,74 +65,65 @@ pub struct RouteMain {
     processed_time_cached: usize,
     /// Total amount of productive time processed and cached
     total_productive_time_cache: usize,
-    /// Total amount of leisure time processed and cached
-    total_leisure_time_cache: usize
+    // /// Total amount of leisure time processed and cached
+    // total_leisure_time_cache: usize
 }
 impl Route for RouteMain {}
 
 impl From<&AppState> for RouteMain {
     fn from(state: &AppState) -> Self {
-        let mut records = state.store().query_records()
+        let records = state.store().query_records()
             .unwrap_or(vec![]);
-        records.reverse();
 
-        let tracking_time = {
-            records.iter().fold(
-                Duration::from_secs(0),
-                |duration, data| {
-                    let (start, end) = data.time_range;
-
-                    duration + end.duration_since(start)
-                        .unwrap_or(Duration::from_secs(0))
-                }
-            )
-        };
-        Self {
+        let mut result = Self {
             records,
-            tracking_time,
+            tracking_time: Duration::from_secs(0),
             processed_records: 0,
             total_productive_time_cache: 0,
-            total_leisure_time_cache: 0,
+            current_activity: None,
+            // total_leisure_time_cache: 0,
 
-            dataset_leisure_cache: vec![(0.0, 0.0)],
+            // dataset_leisure_cache: vec![(0.0, 0.0)],
             dataset_prod_cache: vec![(0.0, 0.0)],
-            dataset_leisure: vec![],
-            dataset_prod: vec![],
+            // dataset_leisure: vec![],
+            last_datapoint: vec![],
             processed_time_cached: 0,
-        }
+        };
+
+        result.update_productivity_dataset();
+        result.update_last_datapoint();
+        result
     }
 }
 
 impl RouteMain {
+    fn last_records_in_duration(&self, target_duration: Duration) -> Vec<ActivityRecord> {
+        let mut result: Vec<ActivityRecord> = vec![];
+        let mut records = self.records.iter().rev();
+        let mut duration = Duration::from_secs(0);
+
+        while let Some(record) = records.next() {
+            if  target_duration < duration { break };
+
+            result.push(record.clone());
+            duration += record.duration();
+        };
+        result.reverse();
+        result
+    }
+
     /// Calculates an appendage to average productive dataset
     /// based on currently cached metrics
     fn process_record(&self, record: &ActivityRecord) -> RecordProcessingResult {
-        let record_length_secs = record.time_range.1.duration_since(record.time_range.0)
-            .map(|dur| dur.as_secs())
-            .unwrap_or(0) as f64;
+        let record_length_secs = record.duration().as_secs() as f64;
         let seconds_processed = self.processed_time_cached as f64;
         let new_time_point = seconds_processed + record_length_secs;
 
         match record.productivity {
-            crate::record_store::ProductivityStatus::Leisure(_) => RecordProcessingResult {
-                prod_avg: (
-                    new_time_point,
-                    self.total_productive_time_cache as f64 / (seconds_processed + record_length_secs),
-                ),
-                leusure_avg: (
-                    new_time_point,
-                    (self.total_leisure_time_cache as f64 + record_length_secs) / (seconds_processed + record_length_secs),
-                ),
-                duration: record_length_secs
-            },
             crate::record_store::ProductivityStatus::Productive(_) => RecordProcessingResult {
                 prod_avg: (
                     new_time_point,
                     (self.total_productive_time_cache as f64 + record_length_secs) / (seconds_processed + record_length_secs),
-                ),
-                leusure_avg: (
-                    new_time_point,
-                    self.total_leisure_time_cache as f64 / (seconds_processed + record_length_secs),
                 ),
                 duration: record_length_secs
             },
@@ -139,76 +132,90 @@ impl RouteMain {
                     new_time_point,
                     self.total_productive_time_cache as f64 / (seconds_processed + record_length_secs),
                 ),
-                leusure_avg: (
-                    new_time_point,
-                    self.total_leisure_time_cache as f64 / (seconds_processed + record_length_secs),
-                ),
                 duration: record_length_secs
             }
         }
     }
+
+    fn reset_cache(&mut self) {
+        self.processed_time_cached = 0;
+        self.total_productive_time_cache = 0;
+        self.processed_records = 0;
+        self.dataset_prod_cache = vec![];
+        self.last_datapoint = vec![];
+    }
+    
+    fn update_productivity_dataset(&mut self) {
+        self.reset_cache();
+        let last_records = self.last_records_in_duration(ROLLING_AVERAGE_TIME_WINDOW - self.tracking_time);
+
+        for record in last_records {
+            let result = self.process_record(&record);
+
+            self.dataset_prod_cache.push(result.prod_avg);
+            self.processed_time_cached += result.duration as usize;
+
+            match record.productivity {
+                crate::record_store::ProductivityStatus::Productive(_) => self.total_productive_time_cache += result.duration as usize,
+                _ => {}
+            }
+        }
+
+        self.update_last_datapoint();
+    }
+
+    fn update_last_datapoint(&mut self) {
+        if let Some(ref record) = self.current_activity {
+            let result = self.process_record(record);
+            self.last_datapoint.push(result.prod_avg);
+        }
+    }
+
+    fn get_cached_dataset_duration(&self) -> Duration {
+        Duration::from_secs_f64(self.dataset_prod_cache.iter()
+            .fold(0.0, |acc, (point, _)| acc + point)
+        )       
+    }
 }
 
 impl StatefulTUIComponent for RouteMain {
-    fn handle_key(&mut self, event: Key) {
-        
-    }
-
-    fn before_render(&mut self, _: &AppState) {
-        let records_available = self.records.len();
-        let processed_records = self.processed_records;
-        let mut queue_index: usize = 0;
-
-        while records_available > 1
-            && queue_index < PROCESSING_QUEUE_SIZE 
-            && processed_records + queue_index < records_available - 1 {
-                let next_record_to_process_idx = std::cmp::min(processed_records, records_available - 1);
-                if let Some(record) = self.records.get(next_record_to_process_idx) {
-                    let result = self.process_record(record);
-
-                    self.dataset_prod_cache.push(result.prod_avg);
-                    self.dataset_leisure_cache.push(result.leusure_avg);
-
-                    match record.productivity {
-                        crate::record_store::ProductivityStatus::Leisure(_) => self.total_leisure_time_cache += result.duration as usize,
-                        crate::record_store::ProductivityStatus::Productive(_) => self.total_productive_time_cache += result.duration as usize,
-                        _ => {}
-                    };
-
-                    self.processed_time_cached += result.duration as usize;
-                    queue_index += 1;
-                }
-        }
-    }
-
     fn tick(&mut self, app_state: &AppState) {
-        let mut records = app_state.store().query_records()
+        let records = app_state.store().query_records()
             .unwrap_or(vec![]);
-        records.reverse();
+
+        self.tracking_time = app_state.tracker().get_current_tracking_period();
+        
+        if let Some(arch) = app_state.get_current_archetype() {
+            let end_time = std::time::SystemTime::now();
+            let start_time = end_time.checked_sub(self.tracking_time).unwrap();
+            let mut activity = ActivityRecord {
+                archetype: arch.clone(),
+                time_range: (start_time, end_time),
+                productivity: crate::record_store::ProductivityStatus::Neutral
+            };
+
+            app_state.classifier().classify(&mut activity);
+            self.current_activity = Some(activity);
+        } else {
+            self.current_activity = None;
+        }
         
         if records.len() != self.records.len() {
-            self.tracking_time = {
-                records.iter().fold(
-                    Duration::from_secs(0),
-                    |duration, data| {
-                        let (start, end) = data.time_range;
-    
-                        duration + end.duration_since(start)
-                            .unwrap_or(Duration::from_secs(0))
-                    }
-                )
-            };
             self.records = records;
+            self.update_productivity_dataset();
+        } else if self.get_cached_dataset_duration() + self.tracking_time > ROLLING_AVERAGE_TIME_WINDOW {
+            self.update_productivity_dataset();
+        } else {
+            self.update_last_datapoint();
         }
-        self.tracking_time += app_state.tracker().get_current_tracking_period();
     }
 
     fn render(&self, frame: &mut TUIFrame, chunk: tui::layout::Rect) {
-        let max_val = self.dataset_prod_cache.iter()
-            .map(|val| val.1)
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
-            .unwrap();
-        
+        let all_data: Vec<(f64, f64)> = self.dataset_prod_cache.iter()
+            .chain(&self.last_datapoint)
+            .cloned()
+            .collect();
+
         let data = [
             TUIDataset::default()
                 .name("productive")
@@ -216,47 +223,29 @@ impl StatefulTUIComponent for RouteMain {
                 .style(Style::default().fg(
                     Color::LightMagenta
                 ))
-                .data(&self.dataset_prod_cache)
+                .graph_type(GraphType::Line)
+                .data(
+                    &all_data
+                )
         ];
-        let info = format!("{:?}", max_val);
         let chart_block = Block::default()
-                .title(&info)
                 .borders(Borders::NONE);
         let chart = Chart::default()
                 .block(chart_block)
                 .x_axis(
                     Axis::default()
-                    .title("Tracked time")
-                    .labels(&["start", "finish"])
-                    .bounds([0.0, self.processed_time_cached as f64])
+                    .title("Time")
+                    .labels(&["5 minutes ago", "now"])
+                    .bounds([0.0, ROLLING_AVERAGE_TIME_WINDOW.as_secs_f64() + 20.0])
                 )
                 .y_axis(
                     Axis::default()
-                    .title("Average productivity")
-                    .labels(&["min", "max"])
+                    .title("Productivity")
+                    .labels(&["0%", "100%"])
                     .bounds([0.0, 1.2])
                 )
                 .datasets(&data);
         
         frame.render_widget(chart, chunk);
-        // let chunks = Layout::default()
-        //     .direction(Direction::Horizontal)
-        //     .margin(1)
-        //     .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
-        //     .split(frame.size());
-
-        // let window_info_text = (&self.display).to_widgets();
-
-        // let block = Block::default()
-        //     .title(" Active window info ")
-        //     .borders(Borders::ALL);
-        // let window_notification = Paragraph::new(window_info_text.iter())
-        //     .block(block.clone())
-        //     .alignment(Alignment::Left);
-        
-        // frame.render_widget(window_notification, chunks[0]);
-
-        // let block = Block::default().title(" Block 2 ").borders(Borders::ALL);
-        // frame.render_widget(block, chunks[1]);
     }
 }
