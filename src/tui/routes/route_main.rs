@@ -54,8 +54,7 @@ pub struct RouteMain {
 
     /// Dataset for current productive activity
     last_datapoint: Dataset,
-    /// Dataset for current leisure activity
-    // dataset_leisure: Dataset,
+
 
 
     /// Number of records processed and cached
@@ -65,8 +64,6 @@ pub struct RouteMain {
     processed_time_cached: usize,
     /// Total amount of productive time processed and cached
     total_productive_time_cache: usize,
-    // /// Total amount of leisure time processed and cached
-    // total_leisure_time_cache: usize
 }
 impl Route for RouteMain {}
 
@@ -236,7 +233,7 @@ impl StatefulTUIComponent for RouteMain {
                     Axis::default()
                     .title("Time")
                     .labels(&["5 minutes ago", "now"])
-                    .bounds([0.0, ROLLING_AVERAGE_TIME_WINDOW.as_secs_f64() + 20.0])
+                    .bounds([0.0, ROLLING_AVERAGE_TIME_WINDOW.as_secs_f64() + 120.0])
                 )
                 .y_axis(
                     Axis::default()
