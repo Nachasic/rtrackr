@@ -13,7 +13,7 @@ afk_interval = 10
 
     [[activity.rule]]
         # Grabbing by app name
-        for_name = ["Navigator", "Google-Chrome"]
+        for_name = ["Navigator", "google-chrome"]
 
         # Providing multiple criteria is equivalent to "OR" operation
         title_contains_any = ["trackr"]

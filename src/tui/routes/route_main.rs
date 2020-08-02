@@ -112,7 +112,7 @@ impl RouteMain {
     /// Calculates an appendage to average productive dataset
     /// based on currently cached metrics
     fn process_record(&self, record: &ActivityRecord) -> RecordProcessingResult {
-        let record_length_secs = record.duration().as_secs() as f64;
+        let record_length_secs = std::cmp::max(record.duration().as_secs(), 1) as f64;
         let seconds_processed = self.processed_time_cached as f64;
         let new_time_point = seconds_processed + record_length_secs;
 
