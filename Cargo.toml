@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 x11 = { version = "2.18", features = ["xlib"] }
 tui = { version = "0.9", features = ["crossterm"] }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.8", features = ["full"] }
 # rustbreak = { version = "2.0.0-rc3", features = ["bin_enc"] }
 rustbreak = { git = "https://github.com/TheNeikos/rustbreak.git", features = ["bin_enc"] }
 serde = { version = "1.0", features = ["derive"] }
